@@ -1,0 +1,122 @@
+---
+title: "List Exchanges"
+description: "Get all exchanges available to your account"
+openapi: "api-reference/openapi.json GET /exchanges/"
+---
+
+## Overview
+
+Returns all exchanges available to your account. Each exchange includes a summary of available fee types and the total record count. Use this as your starting point to discover what data you can query.
+
+<Note>
+  **Authorization Required** - Include your API key in the
+  `x-rulebook-api-access-key` header. Contact
+  [aaron@rulebookcompany.com](mailto:aaron@rulebookcompany.com) to obtain
+  access.
+</Note>
+
+## Request
+
+```bash
+curl -X GET https://api.rulebookcompany.com/api/v1/exchanges/ \
+  -H "x-rulebook-api-access-key: YOUR_API_KEY"
+```
+
+## Response
+
+<ResponseField name="data" type="array">
+  Array of exchange objects
+
+  <Expandable title="Exchange Object">
+    <ResponseField name="name" type="string">
+      Exchange identifier used in API queries (e.g., `fee_cboe_us_bzx_options`, `nasdaqphlx`)
+    </ResponseField>
+
+    <ResponseField name="display_name" type="string">
+      Human-readable exchange name
+    </ResponseField>
+
+    <ResponseField name="fee_types" type="string[]">
+      Fee types available for this exchange (e.g., `["option"]`, `["equity"]`)
+    </ResponseField>
+
+    <ResponseField name="record_count" type="integer">
+      Total fee schedule records available
+    </ResponseField>
+
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="meta" type="object">
+  Response metadata
+
+  <Expandable title="Meta">
+    <ResponseField name="record_count" type="integer">
+      Number of exchanges returned
+    </ResponseField>
+
+    <ResponseField name="query_time_ms" type="integer | null">
+      Query execution time in milliseconds
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Example Response
+
+```json
+{
+  "data": [
+    {
+      "name": "fee_cboe_us_bzx_options",
+      "display_name": "Fee - CBOE US BZX Options",
+      "fee_types": ["option"],
+      "record_count": 748
+    },
+    {
+      "name": "fee_nyse_arca_options",
+      "display_name": "Fee - NYSE Arca Options",
+      "fee_types": ["option"],
+      "record_count": 1383
+    },
+    {
+      "name": "nasdaqphlx",
+      "display_name": "Nasdaq Stock Exchange PHLX",
+      "fee_types": ["option"],
+      "record_count": 1989
+    },
+    {
+      "name": "fee_memx",
+      "display_name": "MEMX Option Exchange",
+      "fee_types": ["option"],
+      "record_count": 122
+    }
+  ],
+  "meta": {
+    "record_count": 4,
+    "query_time_ms": 3407
+  }
+}
+```
+
+## Next Steps
+
+<Tip>
+  After listing exchanges, call [Get Exchange
+  Details](/api-reference/endpoint/exchange-detail) to see all available filter
+  values for a specific exchange, or go directly to [List Fee Schedule
+  Results](/api-reference/endpoint/fee-schedule-results) to start querying data.
+</Tip>
+
+## Error Responses
+
+<ResponseExample>
+```json 401 Unauthorized
+{
+  "error": {
+    "code": "UNAUTHORIZED",
+    "message": "Missing or invalid API key."
+  },
+  "meta": { "query_time_ms": 1 }
+}
+```
+</ResponseExample>

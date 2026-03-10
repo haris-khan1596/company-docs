@@ -1,0 +1,4 @@
+/* Hide the search bar from the navbar */
+div:has(> #search-bar-entry) {
+  display: none !important;
+}

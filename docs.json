@@ -1,0 +1,135 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "aspen",
+  "name": "Rulebook Company",
+  "colors": {
+    "primary": "#22D3EE",
+    "light": "#22D3EE",
+    "dark": "#0780a9"
+  },
+  "favicon": "/favicon.svg",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "index",
+              "overview",
+              "quickstart",
+              "api-key",
+              "playground",
+              "changelog"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API References",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "api-reference/introduction",
+              "api-reference/authentication"
+            ]
+          },
+          {
+            "group": "Exchanges",
+            "pages": [
+              "api-reference/endpoint/list-exchanges",
+              "api-reference/endpoint/exchange-detail"
+            ]
+          },
+          {
+            "group": "Fee Schedule Results",
+            "pages": [
+              "api-reference/endpoint/fee-schedule-results",
+              "api-reference/endpoint/fee-schedule-result-detail",
+              "api-reference/endpoint/fee-schedule-results-by-version",
+              "api-reference/endpoint/fee-schedule-filters"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "SDKs",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": ["sdks/overview"]
+          },
+          {
+            "group": "Python",
+            "pages": [
+              "sdks/python-quickstart",
+              "sdks/python-errors",
+              "sdks/python-advanced"
+            ]
+          },
+          {
+            "group": "TypeScript",
+            "pages": [
+              "sdks/typescript-quickstart",
+              "sdks/typescript-errors",
+              "sdks/typescript-advanced"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "logo": {
+    "light": "/logo/light.png",
+    "dark": "/logo/dark.png"
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "Support",
+        "href": "mailto:aaron@rulebookcompany.com"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Explore More",
+      "href": "https://rulebookcompany.com"
+    }
+  },
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "perplexity",
+      "mcp",
+      "cursor",
+      "vscode"
+    ]
+  },
+  "topAnchor": {
+    "enabled": false
+  },
+  "modeToggle": {
+    "default": "wide",
+    "isHidden": true
+  },
+  "layout": {
+    "default": "topnav"
+  },
+  "api": {
+    "baseUrl": "https://api.rulebookcompany.com/api/v1",
+    "auth": {
+      "method": "key",
+      "name": "x-rulebook-api-access-key",
+      "inputPrefix": ""
+    },
+    "playground": {
+      "mode": "simple"
+    }
+  },
+  "footer": {}
+}

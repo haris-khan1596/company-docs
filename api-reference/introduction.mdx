@@ -1,0 +1,152 @@
+---
+title: "Introduction"
+description: "Get started with the Rulebook Company API for exchange fee and rebate data"
+---
+
+## Welcome to the Rulebook Company API
+
+The Rulebook Company API provides read-only access to comprehensive exchange fee schedule and rebate data across multiple US trading venues. Query historical and current fee schedules, filter by exchange, fee type, participant, action, and more.
+
+<Note>
+  **Get API Access** — Contact our sales team at
+  [aaron@rulebookcompany.com](mailto:aaron@rulebookcompany.com) or visit our
+  [website](https://rulebookcompany.com) to obtain your API access key.
+</Note>
+
+## Base URL
+
+All API requests should be made to:
+
+```
+https://api.rulebookcompany.com/api/v1
+```
+
+## Authentication
+
+All endpoints require an API access key in the `x-rulebook-api-access-key` header:
+
+```bash
+curl https://api.rulebookcompany.com/api/v1/exchanges \
+  -H "x-rulebook-api-access-key: YOUR_API_KEY"
+```
+
+Learn more in the [Authentication](/api-reference/authentication) section.
+
+## API Overview
+
+The API is organized into two resource groups. All endpoints are `GET` requests that return JSON.
+
+### Exchanges
+
+Discover what exchanges and filter values are available to your account.
+
+<CardGroup cols={2}>
+  <Card
+    title="List Exchanges"
+    icon="building-columns"
+    href="/api-reference/endpoint/list-exchanges"
+  >
+    Get all exchanges available to your account with fee types and record counts
+  </Card>
+  <Card
+    title="Get Exchange Details"
+    icon="circle-info"
+    href="/api-reference/endpoint/exchange-detail"
+  >
+    Get full metadata for an exchange: date ranges, fee types, categories,
+    actions, participants, and more
+  </Card>
+</CardGroup>
+
+### Fee Schedule Results
+
+Query, filter, and retrieve extracted fee schedule line items.
+
+<CardGroup cols={2}>
+  <Card
+    title="List Fee Schedule Results"
+    icon="database"
+    href="/api-reference/endpoint/fee-schedule-results"
+  >
+    Paginated list with 8 multi-value filters, sorting, date ranges, and
+    latest-only mode
+  </Card>
+  <Card
+    title="Get Fee Schedule Result"
+    icon="magnifying-glass"
+    href="/api-reference/endpoint/fee-schedule-result-detail"
+  >
+    Retrieve a single fee schedule result by ID
+  </Card>
+  <Card
+    title="Get Results by Version"
+    icon="code-branch"
+    href="/api-reference/endpoint/fee-schedule-results-by-version"
+  >
+    Get all fee results from a specific extraction version
+  </Card>
+  <Card
+    title="Get Available Filters"
+    icon="filter"
+    href="/api-reference/endpoint/fee-schedule-filters"
+  >
+    Discover available filter values scoped to your account
+  </Card>
+</CardGroup>
+
+## Typical Workflow
+
+<Steps>
+  <Step title="Discover exchanges">
+    Call [List Exchanges](/api-reference/endpoint/list-exchanges) to see what exchanges you have access to.
+  </Step>
+
+<Step title="Explore an exchange">
+  Call [Get Exchange Details](/api-reference/endpoint/exchange-detail) to see
+  all available filter values (fee types, categories, actions, participants,
+  etc.) and the date range of data.
+</Step>
+
+<Step title="Query fee data">
+  Call [List Fee Schedule Results](/api-reference/endpoint/fee-schedule-results)
+  with your chosen filters. Use `latest_only=true` to get only the most current
+  fee data.
+</Step>
+
+  <Step title="Paginate through results">
+    Use `page_number` and `page_size` to iterate through large result sets.
+  </Step>
+</Steps>
+
+## Data Coverage
+
+- **Fee Types**: `OPTION`, `EQUITY`
+- **Fee Categories**: Fees And Rebates, General Provisions, Legal Regulatory Fee, Market Data Fees, Participant Fee, Port Fees And Other Services
+- **Actions**: Make, Take, Open, Routed, Other
+- **Participants**: Market Makers, Broker Dealers, Customers, Firms, and more
+- **Symbol Classifications**: ETF, ETN, Equity, Index, N/A, All
+- **Symbol Types**: Penny, Non Penny, Both, N/A
+- **Trade Types**: Simple Order, Complex Order, Index Options, Multiply Traded Options, N/A
+
+## Rate Limits
+
+Rate limits are applied per API key:
+
+- **Burst:** up to 300 requests
+- **Sustained:** ~60 requests per minute
+
+Every response includes rate limit headers:
+
+| Header | Description |
+|--------|-------------|
+| `X-RateLimit-Limit` | Maximum request capacity |
+| `X-RateLimit-Remaining` | Requests remaining |
+| `X-RateLimit-Reset` | Unix timestamp when capacity is next replenished |
+| `Retry-After` | Seconds to wait before retrying (only on `429` responses) |
+
+When you exceed the rate limit, the API returns `429 Too Many Requests`. Wait for the duration in the `Retry-After` header before retrying. Both SDKs handle `429` responses automatically with exponential backoff (default: 2 retries).
+
+## Support
+
+- Email: [aaron@rulebookcompany.com](mailto:aaron@rulebookcompany.com)
+- Website: [https://rulebookcompany.com](https://rulebookcompany.com)

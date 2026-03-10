@@ -1,0 +1,71 @@
+---
+title: "Changelog"
+description: "Latest updates to the Rulebook API and SDKs"
+---
+
+Stay up to date with the latest changes to the Rulebook API and official SDKs.
+
+## Python SDK v0.2.0
+
+<Info>Install with `pip install rulebook-sdk>=0.2.0`. Requires Python 3.11+.</Info>
+
+### Breaking Changes
+
+- **`FeeScheduleResult.id` renamed to `FeeScheduleResult.record_id`** — aligns with the API response schema
+- **Removed `FeeScheduleResult.fee_reference`** — field does not exist in the API response model
+
+### New Features
+
+- `include_footnotes`, `include_definitions`, `include_source` parameters on `list()`, `retrieve()`, and `get_results_by_version()` (sync, async, and raw response variants)
+- `exchange_name` parameter on `get_filters()` to narrow filter values to specific exchanges
+- New response models: `Footnote`, `Definition`, `Relationships`
+- New fields on `FeeScheduleResult`: `source_document`, `source_link`, `page_number`, `relationships`
+
+---
+
+## Python SDK v0.1.2
+
+<Info>Install with `pip install rulebook-sdk`. Requires Python 3.11+.</Info>
+
+### Exchanges
+
+- `client.exchanges.list()` — list all exchanges accessible to your account
+- `client.exchanges.retrieve(name)` — get exchange detail with date ranges, fee types, actions, participants, and more
+
+### Fee Schedule Results
+
+- `client.fee_schedule_results.list()` — query fee schedules with filtering by exchange, fee type, pagination, and ordering
+- `client.fee_schedule_results.retrieve(record_id)` — get a single fee schedule result by ID
+- `client.fee_schedule_results.get_filters()` — get available filter values (exchange names, fee types)
+- `client.fee_schedule_results.get_results_by_version(version_id)` — get all results for a specific extraction version
+
+### Client Features
+
+- Sync and async clients (`Rulebook` and `AsyncRulebook`)
+- Typed Pydantic response models (`Exchange`, `ExchangeDetail`, `FeeScheduleResult`, `PaginatedResponse`, `FeeScheduleResultFilters`)
+- Raw HTTP response access via `with_raw_response`
+- Configurable timeouts, retries, and custom headers
+- Immutable client copies with `with_options()`
+- Typed exception hierarchy (`NotFoundError`, `AuthenticationError`, `RateLimitError`, etc.)
+
+---
+
+## API
+
+### Exchanges
+
+- `GET /exchanges/` — list all exchanges with name, display name, fee types, and record count
+- `GET /exchanges/{exchange_name}` — exchange detail with date ranges, fee categories, actions, participants, symbol classifications, and trade types
+
+### Fee Schedule Results
+
+- `GET /fee-schedule-results/` — list fee schedules with filtering by `exchange_name`, `fee_type`, `latest_only`, pagination (`page_size`, `page_number`), and ordering (`order_by`, `order_dir`)
+- `GET /fee-schedule-results/{record_id}` — retrieve a single fee schedule result
+- `GET /fee-schedule-results/versions/{version_id}` — get all results for a specific extraction version
+- `GET /fee-schedule-results/filters/` — get available filter values for building queries
+
+### Authentication & Rate Limiting
+
+- API key authentication via `x-rulebook-api-access-key` header
+- Per-key access control — only see exchanges you have access to
+- Token bucket rate limiting per API key

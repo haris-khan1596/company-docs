@@ -1,0 +1,289 @@
+---
+title: 'TypeScript SDK'
+description: 'Install and start using the Rulebook TypeScript SDK'
+---
+
+## Installation
+
+```bash
+npm install rulebook-sdk
+```
+
+<Note>
+  Requires Node.js 18+ (uses native `fetch`). TypeScript 5.4+ recommended for type checking.
+</Note>
+
+## Initialize the Client
+
+```typescript
+import { Rulebook } from "rulebook-sdk";
+
+const client = new Rulebook({ apiKey: "your-api-key" });
+```
+
+Or set the `RULEBOOK_API_KEY` environment variable and omit the parameter:
+
+```bash
+export RULEBOOK_API_KEY="your-api-key"
+```
+
+```typescript
+import { Rulebook } from "rulebook-sdk";
+
+const client = new Rulebook(); // reads from RULEBOOK_API_KEY
+```
+
+You can also override the base URL via the `RULEBOOK_BASE_URL` environment variable:
+
+```bash
+export RULEBOOK_BASE_URL="https://your-custom-endpoint/api/v1"
+```
+
+## List Exchanges
+
+```typescript
+const exchanges = await client.exchanges.list();
+
+for (const ex of exchanges) {
+  console.log(`${ex.name} (${ex.display_name})`);
+  console.log(`  Fee types: ${ex.fee_types}`);
+  console.log(`  Records: ${ex.record_count}`);
+}
+```
+
+**Response type:** `Exchange[]`
+
+| Field         | Type       | Description                        |
+|---------------|------------|------------------------------------|
+| `name`         | `string`   | Exchange identifier (e.g., "fee_cboe_us_options") |
+| `display_name` | `string`   | Human-readable name                |
+| `fee_types`    | `string[]` | Available fee types                |
+| `record_count` | `number`   | Total fee schedule records         |
+
+## Get Exchange Details
+
+```typescript
+const detail = await client.exchanges.retrieve("NYSE");
+
+console.log(`Date range: ${detail.date_range.earliest} to ${detail.date_range.latest}`);
+console.log(`Actions: ${detail.actions}`);
+console.log(`Participants: ${detail.participants}`);
+console.log(`Fee categories: ${detail.fee_categories}`);
+```
+
+**Response type:** `ExchangeDetail`
+
+<Expandable title="ExchangeDetail fields">
+| Field                    | Type       | Description                                   |
+|--------------------------|------------|-----------------------------------------------|
+| `name`                    | `string`   | Exchange identifier                            |
+| `display_name`            | `string`   | Human-readable name                            |
+| `date_range`              | `DateRange`| `.earliest` and `.latest` (YYYY-MM-DD)         |
+| `fee_types`               | `string[]` | Available fee types                            |
+| `fee_categories`          | `string[]` | Available fee categories                       |
+| `actions`                 | `string[]` | Available trading actions                      |
+| `participants`            | `string[]` | Available participant types                    |
+| `symbol_classifications`  | `string[]` | Available symbol classifications               |
+| `symbol_types`            | `string[]` | Available symbol types                         |
+| `trade_types`             | `string[]` | Available trade types                          |
+</Expandable>
+
+> **Note:** The total record count is available in the response metadata (`meta.record_count`), accessible via raw response access.
+
+## List Fee Schedule Results
+
+```typescript
+const page = await client.feeScheduleResults.list({
+  exchange_name: ["fee_cboe_us_options"],
+  fee_type: ["option"],
+  fee_participant: ["market_maker"],
+  latest_only: true,
+  page_size: 10,
+});
+
+console.log(`Total results: ${page.total_records}`);
+for (const result of page.data) {
+  console.log(`  ${result.fee_action}: ${result.fee_amount} (${result.fee_symbol_type})`);
+}
+```
+
+**Response type:** `PaginatedResponse<FeeScheduleResult>`
+
+| Field          | Type                    | Description                            |
+|----------------|-------------------------|----------------------------------------|
+| `data`           | `FeeScheduleResult[]`   | Array of result objects                |
+| `total_records`  | `number`                | Total records matching the query       |
+| `page_size`      | `number`                | Records per page                       |
+| `total_pages`    | `number`                | Total number of pages                  |
+| `current_page`   | `number`                | Current page number (0-indexed)        |
+| `query_time_ms`  | `number \| null`        | Query execution time in milliseconds   |
+
+**Filter parameters:**
+
+| Parameter                  | Type       | Description                        |
+|----------------------------|------------|------------------------------------|
+| `exchange_name`              | `string[]` | Filter by exchange name(s)         |
+| `fee_type`                   | `string[]` | Filter by fee type(s)              |
+| `fee_category`               | `string[]` | Filter by fee category(s)          |
+| `fee_action`                 | `string[]` | Filter by trading action(s)        |
+| `fee_participant`            | `string[]` | Filter by participant type(s)      |
+| `fee_symbol_classification`  | `string[]` | Filter by symbol classification(s) |
+| `fee_symbol_type`            | `string[]` | Filter by symbol type(s)           |
+| `fee_trade_type`             | `string[]` | Filter by trade type(s)            |
+| `start_date`                 | `string`   | Filter by scraped date (YYYY-MM-DD)|
+| `end_date`                   | `string`   | Filter by scraped date (YYYY-MM-DD)|
+| `latest_only`                | `boolean`  | Only latest version per exchange   |
+| `order_by`                   | `string`   | Sort field (default: `created_on`) |
+| `order_dir`                  | `string`   | Sort direction: `asc` or `desc`    |
+| `page_size`                  | `number`   | Records per page (1–100)           |
+| `page_number`                | `number`   | Page number (0-indexed)            |
+| `include_footnotes`          | `boolean`  | Include related footnotes           |
+| `include_definitions`        | `boolean`  | Include related definitions         |
+| `include_source`             | `boolean`  | Include source document info        |
+
+## Get a Single Fee Schedule Result
+
+```typescript
+const result = await client.feeScheduleResults.retrieve("a1b2c3d4-e5f6-7890-abcd-ef1234567890");
+
+console.log(`${result.exchange_name} — ${result.fee_type} — ${result.fee_category}`);
+console.log(`  Action: ${result.fee_action}`);
+console.log(`  Amount: ${result.fee_amount}`);
+console.log(`  Participant: ${result.fee_participant}`);
+```
+
+**Response type:** `FeeScheduleResult`
+
+<Expandable title="FeeScheduleResult fields">
+| Field                       | Type                       | Description                            |
+|-----------------------------|----------------------------|----------------------------------------|
+| `record_id`                   | `string`                   | Unique identifier (UUID)               |
+| `exchange_name`               | `string`                   | Exchange identifier                    |
+| `scraped_time`                | `string \| null`           | When the fee schedule was scraped      |
+| `version_id`                  | `string \| null`           | Extraction version UUID                |
+| `fee_type`                    | `string`                   | Fee type (option, equity)              |
+| `source_document`             | `string \| null`           | Source document title (with `include_source`) |
+| `source_link`                 | `string \| null`           | Source document URL (with `include_source`)   |
+| `page_number`                 | `number \| null`           | Page in source document (with `include_source`) |
+| `fee_category`                | `string`                   | Fee category                           |
+| `fee_charge_type`             | `string`                   | Fee or Rebate                          |
+| `fee_amount`                  | `string`                   | Fee/rebate amount                      |
+| `fee_action`                  | `string`                   | Trading action (make, take, etc.)      |
+| `fee_action_details`          | `string \| null`           | Additional action details              |
+| `fee_basis`                   | `string \| null`           | Basis for fee calculation              |
+| `fee_participant`             | `string`                   | Market participant type                |
+| `fee_participant_details`     | `string \| null`           | Participant classification details     |
+| `fee_monthly_volume`          | `string \| null`           | Volume threshold for tiered pricing    |
+| `fee_monthly_volume_criteria` | `string \| null`           | Volume tier criteria                   |
+| `fee_symbol_classification`   | `string \| null`           | Symbol classification                  |
+| `fee_symbol_type`             | `string \| null`           | Penny/Non-Penny classification         |
+| `fee_trade_type`              | `string \| null`           | Trade type                             |
+| `fee_symbol`                  | `string \| null`           | Specific symbol(s)                     |
+| `fee_excluded_symbols`        | `string \| null`           | Excluded symbols                       |
+| `fee_conditions`              | `string \| null`           | Conditions for this fee                |
+| `fee_exclusions`              | `string \| null`           | Exclusion scenarios                    |
+| `fee_notes`                   | `string \| null`           | Additional notes                       |
+| `fee_extra_info`              | `string \| null`           | Additional information                 |
+| `relationships`               | `Relationships \| null`    | Footnotes and definitions (with `include_footnotes`/`include_definitions`) |
+</Expandable>
+
+## Get Available Filters
+
+Discover valid filter values before querying results:
+
+```typescript
+const filters = await client.feeScheduleResults.getFilters();
+
+console.log(`Exchanges: ${filters.exchange_names}`);
+console.log(`Fee types: ${filters.fee_types}`);
+console.log(`Categories: ${filters.fee_categories}`);
+console.log(`Actions: ${filters.fee_actions}`);
+console.log(`Participants: ${filters.fee_participants}`);
+
+// Narrow filters to specific exchanges
+const cboeFilters = await client.feeScheduleResults.getFilters({
+  exchange_name: ["fee_cboe_us_options"],
+});
+```
+
+**Response type:** `FeeScheduleResultFilters`
+
+| Field                       | Type       | Description                    |
+|-----------------------------|------------|--------------------------------|
+| `exchange_names`             | `string[]` | Available exchange names       |
+| `fee_types`                  | `string[]` | Available fee types            |
+| `fee_categories`             | `string[]` | Available fee categories       |
+| `fee_actions`                | `string[]` | Available trading actions      |
+| `fee_participants`           | `string[]` | Available participant types    |
+| `fee_symbol_classifications` | `string[]` | Available symbol classifications|
+| `fee_symbol_types`           | `string[]` | Available symbol types         |
+| `fee_trade_types`            | `string[]` | Available trade types          |
+
+## Get Results by Version
+
+Retrieve all fee schedule results from a specific extraction version:
+
+```typescript
+const page = await client.feeScheduleResults.getResultsByVersion(
+  "f7e8d9c0-b1a2-3456-7890-abcdef123456",
+  { page_size: 50 },
+);
+
+console.log(`Version has ${page.total_records} results (${page.total_pages} pages)`);
+for (const result of page.data) {
+  console.log(`  ${result.fee_action}: ${result.fee_amount}`);
+}
+```
+
+## Pagination
+
+Fee schedule results are paginated. Use `page_number` and `page_size` to iterate:
+
+```typescript
+let page_number = 0;
+let totalFetched = 0;
+
+while (true) {
+  const page = await client.feeScheduleResults.list({
+    latest_only: true,
+    page_size: 50,
+    page_number,
+  });
+  totalFetched += page.data.length;
+  console.log(`Page ${page_number + 1}/${page.total_pages}: ${page.data.length} results`);
+
+  if (page_number >= page.total_pages - 1) break;
+  page_number++;
+}
+
+console.log(`Fetched ${totalFetched} of ${page.total_records} total results`);
+```
+
+## Async by Default
+
+The TypeScript SDK is async-native — all methods return a `Promise` and are designed for
+`async`/`await` usage. Unlike the Python SDK which provides separate `Rulebook` and
+`AsyncRulebook` clients, there is no separate sync client.
+
+```typescript
+import { Rulebook } from "rulebook-sdk";
+
+async function main() {
+  const client = new Rulebook({ apiKey: "your-api-key" });
+  const exchanges = await client.exchanges.list();
+  const detail = await client.exchanges.retrieve("NYSE");
+}
+
+main();
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Error Handling" icon="triangle-exclamation" href="/sdks/typescript-errors">
+    Handle API errors with typed exceptions
+  </Card>
+  <Card title="Advanced Usage" icon="gear" href="/sdks/typescript-advanced">
+    Timeouts, retries, raw responses, and per-request overrides
+  </Card>
+</CardGroup>

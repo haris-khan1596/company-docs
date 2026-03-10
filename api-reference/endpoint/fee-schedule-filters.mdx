@@ -1,0 +1,161 @@
+---
+title: "Get Available Filters"
+description: "Discover available filter values for fee schedule queries"
+openapi: "api-reference/openapi.json GET /fee-schedule-results/filters"
+---
+
+## Overview
+
+Returns all distinct filter values for fee schedule results, scoped to exchanges associated with your API key. The values returned are the exact values to pass as query parameters when calling [List Fee Schedule Results](/api-reference/endpoint/fee-schedule-results).
+
+<Note>
+  **Authorization Required** - Include your API key in the
+  `x-rulebook-api-access-key` header. Contact
+  [aaron@rulebookcompany.com](mailto:aaron@rulebookcompany.com) to obtain
+  access.
+</Note>
+
+<Tip>
+  Call this endpoint first, then use the returned values as filter parameters in
+  [List Fee Schedule Results](/api-reference/endpoint/fee-schedule-results).
+</Tip>
+
+## Query Parameters
+
+<ParamField query="exchange_name" type="string[]">
+  Optionally narrow filter values to specific exchanges. When provided, only returns filter values relevant to the specified exchange(s).
+
+**Example:** `?exchange_name=fee_cboe_us_options&exchange_name=fee_nyse_arca_options`
+</ParamField>
+
+## Request
+
+```bash
+curl -X GET "https://api.rulebookcompany.com/api/v1/fee-schedule-results/filters" \
+  -H "x-rulebook-api-access-key: YOUR_API_KEY"
+```
+
+### Filtered by Exchange
+
+```bash
+curl -X GET "https://api.rulebookcompany.com/api/v1/fee-schedule-results/filters?exchange_name=fee_cboe_us_options" \
+  -H "x-rulebook-api-access-key: YOUR_API_KEY"
+```
+
+## Response
+
+<ResponseField name="data" type="object">
+  Available filter values
+
+  <Expandable title="Filter Values">
+    <ResponseField name="exchange_names" type="string[]">
+      Available exchange identifiers (use as `exchange_name` filter values)
+    </ResponseField>
+
+    <ResponseField name="fee_types" type="string[]">
+      Available fee types (e.g., `option`, `equity`)
+    </ResponseField>
+
+    <ResponseField name="fee_categories" type="string[]">
+      Available fee categories (e.g., `fees_and_rebates`, `legal_regulatory_fee`)
+    </ResponseField>
+
+    <ResponseField name="fee_actions" type="string[]">
+      Available trading action types (e.g., `make`, `take`, `open`)
+    </ResponseField>
+
+    <ResponseField name="fee_participants" type="string[]">
+      Available market participant types (e.g., `market_maker`, `away_market_maker`)
+    </ResponseField>
+
+    <ResponseField name="fee_symbol_classifications" type="string[]">
+      Available symbol classifications (e.g., `etf`, `equity_class`, `not_applicable`)
+    </ResponseField>
+
+    <ResponseField name="fee_symbol_types" type="string[]">
+      Available symbol types (e.g., `penny`, `non_penny`, `both`)
+    </ResponseField>
+
+    <ResponseField name="fee_trade_types" type="string[]">
+      Available trade types (e.g., `simple_order`, `complex_order`). May be empty if no trade type data is available.
+    </ResponseField>
+
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="meta" type="object">
+  Response metadata
+
+  <Expandable title="Meta">
+    <ResponseField name="record_count" type="integer">
+      Total fee schedule records across all accessible exchanges
+    </ResponseField>
+
+    <ResponseField name="query_time_ms" type="integer | null">
+      Query execution time in milliseconds
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Example Response
+
+```json
+{
+  "data": {
+    "exchange_names": ["fee_cboe_us_bzx_options", "fee_memx", "fee_nyse_arca_options", "nasdaqphlx"],
+    "fee_types": ["option"],
+    "fee_categories": [
+      "fees_and_rebates",
+      "general_provisions",
+      "legal_regulatory_fee",
+      "market_data_fees",
+      "participant_fee",
+      "port_fees_and_other_services"
+    ],
+    "fee_actions": ["make", "open", "other", "routed", "take"],
+    "fee_participants": [
+      "all",
+      "away_market_maker",
+      "broker_dealer",
+      "customer",
+      "firm",
+      "market_maker",
+      "other",
+      "professional"
+    ],
+    "fee_symbol_classifications": ["all", "equity_class", "etf", "index", "not_applicable"],
+    "fee_symbol_types": ["both", "non_penny", "not_applicable", "penny"],
+    "fee_trade_types": []
+  },
+  "meta": {
+    "record_count": 4242,
+    "query_time_ms": 3247
+  }
+}
+```
+
+## Usage
+
+```bash
+# Step 1: Discover what's available
+curl -X GET "https://api.rulebookcompany.com/api/v1/fee-schedule-results/filters" \
+  -H "x-rulebook-api-access-key: YOUR_API_KEY"
+
+# Step 2: Query with the returned values
+curl -X GET "https://api.rulebookcompany.com/api/v1/fee-schedule-results?exchange_name=fee_cboe_us_bzx_options&fee_type=option&fee_action=make&fee_participant=market_maker&latest_only=true" \
+  -H "x-rulebook-api-access-key: YOUR_API_KEY"
+```
+
+## Error Responses
+
+<ResponseExample>
+```json 401 Unauthorized
+{
+  "error": {
+    "code": "UNAUTHORIZED",
+    "message": "Missing or invalid API key."
+  },
+  "meta": { "query_time_ms": 1 }
+}
+```
+</ResponseExample>

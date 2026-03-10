@@ -1,0 +1,106 @@
+---
+title: 'SDKs Overview'
+description: 'Official client libraries for the Rulebook Company API'
+---
+
+## Official SDKs
+
+Use our official SDKs to integrate exchange fee schedule data into your applications with
+strongly-typed models, automatic retries, and built-in error handling.
+
+<CardGroup cols={2}>
+  <Card title="Python" icon="python" href="/sdks/python-quickstart">
+    Full-featured sync and async client with Pydantic models
+  </Card>
+  <Card title="JavaScript / TypeScript" icon="js" href="/sdks/typescript-quickstart">
+    Async-native client with full TypeScript types and zero runtime dependencies
+  </Card>
+</CardGroup>
+
+## Why Use an SDK?
+
+<AccordionGroup>
+  <Accordion title="Strongly typed responses">
+    Every API response is parsed into typed models with IDE autocomplete. No more guessing
+    field names or types — your editor knows every field on `Exchange`, `ExchangeDetail`,
+    and all other response objects.
+  </Accordion>
+
+  <Accordion title="Automatic error handling">
+    HTTP errors are mapped to specific exception classes. Catch `NotFoundError` for 404s,
+    `AuthenticationError` for invalid keys, `RateLimitError` for 429s — all with the
+    original response body and status code attached.
+  </Accordion>
+
+  <Accordion title="Built-in retries">
+    Failed requests are automatically retried with exponential backoff. Connection errors,
+    timeouts, and server errors (5xx) are retried up to 2 times by default.
+  </Accordion>
+
+  <Accordion title="Per-request overrides">
+    Override timeout, add extra headers, or inject query parameters on any individual
+    request without creating a new client.
+  </Accordion>
+</AccordionGroup>
+
+## Installation
+
+<CodeGroup>
+
+```bash Python
+pip install rulebook-sdk
+```
+
+```bash TypeScript / JavaScript
+npm install rulebook-sdk
+```
+
+</CodeGroup>
+
+## Quick Comparison
+
+<Tabs>
+  <Tab title="Python SDK">
+    ```python
+    from rulebook import Rulebook, NotFoundError
+
+    client = Rulebook(api_key="your-key")
+    exchanges = client.exchanges.list()
+
+    for ex in exchanges:
+        print(f"{ex.name}: {ex.record_count} records")
+        # IDE autocompletes: ex.name, ex.display_name, ex.fee_types, ex.record_count
+    ```
+  </Tab>
+  <Tab title="TypeScript SDK">
+    ```typescript
+    import { Rulebook, NotFoundError } from "rulebook-sdk";
+
+    const client = new Rulebook({ apiKey: "your-key" });
+    const exchanges = await client.exchanges.list();
+
+    for (const ex of exchanges) {
+      console.log(`${ex.name}: ${ex.recordCount} records`);
+      // IDE autocompletes: ex.name, ex.displayName, ex.feeTypes, ex.recordCount
+    }
+    ```
+  </Tab>
+  <Tab title="Without SDK">
+    ```python
+    import httpx
+
+    response = httpx.get(
+        "https://api.rulebookcompany.com/api/v1/exchanges",
+        headers={"x-rulebook-api-access-key": "your-key"},
+    )
+    data = response.json()
+
+    if "error" in data:
+        raise Exception(data["error"]["message"])
+
+    for ex in data["data"]:
+        print(f"{ex['name']}: {ex['record_count']} records")
+        # No autocomplete, no type safety, manual error handling
+    ```
+  </Tab>
+</Tabs>

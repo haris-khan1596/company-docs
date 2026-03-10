@@ -1,0 +1,180 @@
+---
+title: 'Advanced Usage'
+description: 'Timeouts, retries, raw responses, and per-request overrides'
+---
+
+## Client Configuration
+
+All configuration options with their defaults:
+
+```python
+from rulebook import Rulebook
+
+client = Rulebook(
+    api_key="your-key",                         # required (or RULEBOOK_API_KEY env var)
+    base_url="https://api.rulebookcompany.com/api/v1",  # default (or RULEBOOK_BASE_URL env var)
+    timeout=30.0,                               # seconds, default 30
+    max_retries=2,                              # default 2
+    default_headers={"X-Custom": "value"},      # merged into every request
+    default_query={"custom_param": "value"},    # merged into every request
+)
+```
+
+## Timeouts
+
+### Client-level timeout
+
+```python
+# All requests use a 60-second timeout
+client = Rulebook(api_key="your-key", timeout=60.0)
+```
+
+### Per-request timeout
+
+```python
+# Override timeout for a single request
+detail = client.exchanges.retrieve("NYSE", timeout=120.0)
+```
+
+### Disable timeout
+
+```python
+detail = client.exchanges.retrieve("NYSE", timeout=None)
+```
+
+## Retries
+
+The SDK automatically retries on connection errors, timeouts, and HTTP 408/409/429/5xx
+responses with exponential backoff (starting at 0.5s, max 8s, with jitter).
+
+```python
+# Set max retries
+client = Rulebook(api_key="your-key", max_retries=5)
+
+# Disable retries for a single request
+client.with_options(max_retries=0).exchanges.retrieve("NYSE")
+```
+
+## `with_options()` — Client Overrides
+
+Create a new client with overridden settings without mutating the original:
+
+```python
+client = Rulebook(api_key="your-key")
+
+# Create a variant with different timeout
+slow_client = client.with_options(timeout=120.0)
+
+# Create a variant with extra headers
+debug_client = client.with_options(default_headers={"X-Debug": "true"})
+
+# Original client is unmodified
+```
+
+## Per-Request Overrides
+
+Every resource method accepts keyword arguments for single-request customization:
+
+```python
+# Extra headers
+exchanges = client.exchanges.list(
+    extra_headers={"X-Request-Id": "abc-123"}
+)
+
+# Extra query parameters
+exchanges = client.exchanges.list(
+    extra_query={"custom_param": "value"}
+)
+
+# Custom timeout
+detail = client.exchanges.retrieve("NYSE", timeout=60.0)
+
+# Combine them
+detail = client.exchanges.retrieve(
+    "NYSE",
+    extra_headers={"X-Trace-Id": "xyz"},
+    timeout=90.0,
+)
+```
+
+## Raw Response Access
+
+Access the raw HTTP response (headers, status code) while still getting typed parsing:
+
+```python
+raw = client.exchanges.with_raw_response.retrieve("NYSE")
+
+print(raw.status_code)    # 200
+print(raw.headers)        # httpx.Headers
+print(raw.http_request)   # httpx.Request
+
+# Parse the body on demand
+detail = raw.parse()      # ExchangeDetail
+print(detail.name)        # "NYSE"
+```
+
+Works with all resources including fee schedule results:
+
+```python
+raw = client.fee_schedule_results.with_raw_response.list(
+    exchange_name=["CBOE"],
+    latest_only=True,
+)
+
+print(raw.status_code)    # 200
+page = raw.parse()        # PaginatedResponse[FeeScheduleResult]
+print(page.total_records)
+```
+
+This is useful for:
+- Inspecting response headers (rate limit info, request IDs)
+- Debugging API interactions
+- Accessing metadata not included in the typed model
+
+<Warning>
+  Raw response methods bypass the SDK's automatic retry logic. If a request made
+  via `with_raw_response` fails due to a transient error (timeout, 429, 5xx), it
+  will not be retried automatically. Handle retries manually when using raw responses.
+</Warning>
+
+## Using Types Directly
+
+All response models are available for import and type hinting:
+
+```python
+from rulebook import Rulebook
+from rulebook.types import (
+    Exchange,
+    ExchangeDetail,
+    DateRange,
+    FeeScheduleResult,
+    FeeScheduleResultFilters,
+    Footnote,
+    Definition,
+    Relationships,
+    PaginatedResponse,
+)
+
+def summarize_result(result: FeeScheduleResult) -> str:
+    return f"{result.exchange_name} — {result.fee_action}: {result.fee_amount}"
+
+client = Rulebook(api_key="your-key")
+page = client.fee_schedule_results.list(latest_only=True)
+summaries = [summarize_result(r) for r in page.data]
+```
+
+## Custom HTTP Client
+
+Pass a pre-configured `httpx.Client` for full control over the HTTP layer:
+
+```python
+import httpx
+from rulebook import Rulebook
+
+http_client = httpx.Client(
+    verify=False,          # disable SSL verification (development only)
+    proxy="http://proxy:8080",
+)
+
+client = Rulebook(api_key="your-key", http_client=http_client)
+```

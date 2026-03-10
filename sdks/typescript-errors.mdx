@@ -1,0 +1,157 @@
+---
+title: 'Error Handling'
+description: 'Handle API errors with typed exceptions in the TypeScript SDK'
+---
+
+## Exception Hierarchy
+
+All SDK exceptions inherit from `RulebookError`. HTTP errors are further organized by
+status code so you can catch exactly what you need.
+
+```
+RulebookError
+└── APIError
+    ├── APIConnectionError
+    │   └── APITimeoutError
+    └── APIStatusError
+        ├── BadRequestError          (400)
+        ├── AuthenticationError      (401)
+        ├── PermissionDeniedError    (403)
+        ├── NotFoundError            (404)
+        ├── UnprocessableEntityError (422)
+        ├── RateLimitError           (429)
+        └── InternalServerError      (5xx)
+```
+
+## Basic Error Handling
+
+```typescript
+import { Rulebook, NotFoundError, AuthenticationError, APIConnectionError } from "rulebook-sdk";
+
+const client = new Rulebook({ apiKey: "your-key" });
+
+try {
+  const detail = await client.exchanges.retrieve("INVALID");
+} catch (err) {
+  if (err instanceof NotFoundError) {
+    console.log(`Exchange not found: ${err.message}`);
+    console.log(`Status code: ${err.statusCode}`);   // 404
+  } else if (err instanceof AuthenticationError) {
+    console.log("Invalid API key — check your credentials");
+  } else if (err instanceof APIConnectionError) {
+    console.log("Network error — check your connection");
+  }
+}
+```
+
+## Exception Attributes
+
+Every `APIStatusError` (and its subclasses) carries the full context of the failed request:
+
+```typescript
+import { Rulebook, APIStatusError } from "rulebook-sdk";
+
+const client = new Rulebook({ apiKey: "your-key" });
+
+try {
+  await client.exchanges.retrieve("INVALID");
+} catch (err) {
+  if (err instanceof APIStatusError) {
+    console.log(err.message);       // "Exchange not found"
+    console.log(err.statusCode);    // 404
+    console.log(err.body);          // { error: { code: "NOT_FOUND", message: "..." }, meta: { ... } }
+    console.log(err.headers);       // Headers object
+  }
+}
+```
+
+| Attribute    | Type              | Description                          |
+|--------------|-------------------|--------------------------------------|
+| `message`    | `string`          | Human-readable error description     |
+| `statusCode` | `number`          | HTTP status code                     |
+| `body`       | `unknown \| null` | Parsed JSON response body            |
+| `headers`    | `Headers`         | HTTP response headers                |
+
+## Catching All API Errors
+
+Use the base classes to handle broad categories:
+
+```typescript
+import { Rulebook, APIStatusError, APIConnectionError, RulebookError } from "rulebook-sdk";
+
+const client = new Rulebook({ apiKey: "your-key" });
+
+try {
+  const exchanges = await client.exchanges.list();
+} catch (err) {
+  if (err instanceof APIConnectionError) {
+    // Network-level failure (DNS, timeout, socket)
+    console.log("Could not reach the API");
+  } else if (err instanceof APIStatusError) {
+    // Any HTTP 4xx/5xx error
+    console.log(`API error ${err.statusCode}: ${err.message}`);
+  } else if (err instanceof RulebookError) {
+    // SDK-level error (e.g., missing API key)
+    console.log(`SDK error: ${err.message}`);
+  }
+}
+```
+
+## Input Validation
+
+The SDK validates required parameters before making HTTP calls. This raises a standard
+`Error`, not an SDK exception:
+
+```typescript
+try {
+  await client.exchanges.retrieve(""); // empty string
+} catch (err) {
+  console.log(err.message); // "Expected a non-empty value for `exchange_name` but received ''"
+}
+```
+
+## Fee Schedule Results Error Handling
+
+```typescript
+import { Rulebook, NotFoundError, PermissionDeniedError } from "rulebook-sdk";
+
+const client = new Rulebook({ apiKey: "your-key" });
+
+// Retrieve a single result
+try {
+  const result = await client.feeScheduleResults.retrieve("a1b2c3d4-e5f6-7890-abcd-ef1234567890");
+  console.log(`${result.exchange_name}: ${result.fee_amount}`);
+} catch (err) {
+  if (err instanceof NotFoundError) {
+    console.log("Fee schedule result not found");
+  } else if (err instanceof PermissionDeniedError) {
+    console.log("You do not have access to this exchange's data");
+  }
+}
+
+// Get results by version
+try {
+  const page = await client.feeScheduleResults.getResultsByVersion("f7e8d9c0-...");
+  console.log(`${page.total_records} results in this version`);
+} catch (err) {
+  if (err instanceof NotFoundError) {
+    console.log("Version not found");
+  } else if (err instanceof PermissionDeniedError) {
+    console.log("You do not have access to this version's exchange");
+  }
+}
+```
+
+## Common Error Scenarios
+
+| Scenario                       | Exception               | How to fix                                                   |
+|--------------------------------|-------------------------|--------------------------------------------------------------|
+| Missing or invalid API key     | `AuthenticationError`   | Check your `apiKey` or `RULEBOOK_API_KEY` env var            |
+| Exchange doesn't exist         | `NotFoundError`         | Verify the exchange name with `exchanges.list()`             |
+| Fee schedule result not found  | `NotFoundError`         | Verify the ID with `feeScheduleResults.list()`               |
+| Version not found              | `NotFoundError`         | Check `version_id` from a fee schedule result                |
+| No access to exchange          | `PermissionDeniedError` | Contact sales to expand your access                          |
+| Too many requests              | `RateLimitError`        | Back off and retry, or contact sales for limits              |
+| Server error                   | `InternalServerError`   | Retry — SDK retries automatically by default                 |
+| Network failure                | `APIConnectionError`    | Check your internet connection                               |
+| Request timeout                | `APITimeoutError`       | Increase timeout via `client.withOptions({ timeout: 60000 })`|

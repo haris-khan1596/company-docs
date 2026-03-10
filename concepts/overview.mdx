@@ -1,0 +1,35 @@
+---
+title: Core Concepts
+description: Understand the fundamental concepts behind the Rulebook Company API
+---
+
+# Core Concepts
+
+This section explains the key concepts behind the Rulebook Company API and how data is organized.
+
+## Key Concepts
+
+<AccordionGroup>
+  <Accordion title="What is Rulebook Company?">
+    Rulebook Company is a data platform that provides programmatic access to machine-readable exchange fee schedules, rebate structures, and market microstructure data across 50+ global trading venues. We automatically crawl exchange websites, extract structured fee data from PDF and HTML rulebooks, and serve it through a REST API.
+  </Accordion>
+
+  <Accordion title="How does the data pipeline work?">
+    Exchange fee schedules are continuously crawled from official exchange websites. Documents are processed through an extraction pipeline that identifies fee tables, rebate structures, and regulatory changes. Extracted data is normalized into a consistent schema and made available through the API, typically within hours of an exchange publishing an update.
+  </Accordion>
+
+  <Accordion title="What is a fee schedule result?">
+    A fee schedule result is a single extracted line item from an exchange fee schedule document. Each result represents one fee or rebate rule — for example, "Market Maker Make rebate of $0.25 per contract for Penny Pilot options on NYSE Arca." Results include the fee amount, applicable participant types, trading actions, symbol classifications, and source document references.
+  </Accordion>
+</AccordionGroup>
+
+## Data Model
+
+- **Exchange** — A trading venue (e.g., NYSE Arca Options, Nasdaq PHLX, CBOE BZX). Each exchange has one or more fee types (option, equity) and a set of available filter values.
+- **Fee Schedule Result** — A single fee or rebate line item extracted from an exchange rulebook. Includes fee type, category, amount, action, participant, symbol classification, and more.
+- **Version** — Each extraction run produces a version. You can retrieve all results from a specific version to see a point-in-time snapshot of an exchange's fee schedule.
+- **Filters** — The API provides discoverable filter values (fee categories, actions, participants, symbol types, trade types) scoped to your account's exchanges.
+
+## Versioning and History
+
+The API stores historical fee schedule data across multiple extraction versions. Use `latest_only=true` to get only the most current data, or query by date range to analyze how fees changed over time. Use the version endpoint to retrieve all results from a specific extraction run.

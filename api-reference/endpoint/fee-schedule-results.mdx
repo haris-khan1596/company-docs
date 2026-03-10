@@ -1,0 +1,390 @@
+---
+title: "List Fee Schedule Results"
+description: "Query fee schedule results with filtering, sorting, and pagination"
+openapi: "api-reference/openapi.json GET /fee-schedule-results/"
+---
+
+## Overview
+
+Returns a paginated list of fee schedule results with comprehensive filtering. Each result represents a single fee or rebate line item extracted from an exchange's fee schedule document.
+
+Results are automatically scoped to exchanges associated with your API key.
+
+<Note>
+  **Authorization Required** - Include your API key in the
+  `x-rulebook-api-access-key` header. Contact
+  [aaron@rulebookcompany.com](mailto:aaron@rulebookcompany.com) to obtain
+  access.
+</Note>
+
+<Tip>
+  Use [Get Available Filters](/api-reference/endpoint/fee-schedule-filters) or
+  [Get Exchange Details](/api-reference/endpoint/exchange-detail) to discover
+  valid filter values before querying.
+</Tip>
+
+## Query Parameters
+
+### Filters
+
+All filter parameters accept multiple values using repeated query parameters (e.g., `?exchange_name=Nasdaq&exchange_name=fee_cboe_us_options`). Multiple values are combined with OR logic.
+
+<ParamField query="exchange_name" type="string[]">
+  Filter by exchange identifier(s) — use values from the `exchange_names` field returned by [Get Available Filters](/api-reference/endpoint/fee-schedule-filters)
+
+**Example:** `?exchange_name=fee_cboe_us_options&exchange_name=Nasdaq`
+
+</ParamField>
+
+<ParamField query="fee_type" type="string[]">
+  Filter by fee type(s): `option`, `equity`
+</ParamField>
+
+<ParamField query="fee_category" type="string[]">
+  Filter by fee category(s): `fees_and_rebates`, `general_provisions`, `legal_regulatory_fee`,
+  `market_data_fees`, `participant_fee`, `port_fees_and_other_services`
+</ParamField>
+
+<ParamField query="fee_action" type="string[]">
+  Filter by trading action(s): `make`, `take`, `open`, `routed`, `other`
+</ParamField>
+
+<ParamField query="fee_participant" type="string[]">
+  Filter by participant type(s): `customer`, `firm`, `broker_dealer`, `market_maker`,
+  `away_market_maker`, `professional`, `other`, `all`
+</ParamField>
+
+<ParamField query="fee_symbol_classification" type="string[]">
+  Filter by symbol classification(s): `etf`, `etn`, `equity_class`, `index`, `not_applicable`, `all`
+</ParamField>
+
+<ParamField query="fee_symbol_type" type="string[]">
+  Filter by symbol type(s): `penny`, `non_penny`, `not_applicable`, `both`
+</ParamField>
+
+<ParamField query="fee_trade_type" type="string[]">
+  Filter by trade type(s): `index_options`, `multiply_traded_options`, `simple_order`, `complex_order`
+</ParamField>
+
+### Date Range
+
+<ParamField query="start_date" type="string">
+  Filter results scraped on or after this date (format: `YYYY-MM-DD`)
+</ParamField>
+
+<ParamField query="end_date" type="string">
+  Filter results scraped on or before this date (format: `YYYY-MM-DD`)
+</ParamField>
+
+### Versioning
+
+<ParamField query="latest_only" type="boolean" default="false">
+  When `true`, returns only the most recent version per unique (supplier,
+  fee_type) combination. Use this to get only the current fee data without
+  historical versions.
+</ParamField>
+
+### Sorting
+
+<ParamField query="order_by" type="string" default="created_on">
+  Field to sort by: `created_on`, `scraped_time`, `fee_type`, `fee_category`
+</ParamField>
+
+<ParamField query="order_dir" type="string" default="desc">
+  Sort direction: `asc` or `desc`
+</ParamField>
+
+### Pagination
+
+<ParamField query="page_size" type="integer" default="20">
+  Records per page (1–100)
+</ParamField>
+
+<ParamField query="page_number" type="integer" default="0">
+  Page number (0-indexed)
+</ParamField>
+
+### Relationships
+
+<ParamField query="include_footnotes" type="boolean" default="false">
+  When `true`, includes resolved footnotes from the source document in the `relationships` field of each result.
+</ParamField>
+
+<ParamField query="include_definitions" type="boolean" default="false">
+  When `true`, includes resolved definitions from the source document in the `relationships` field of each result.
+</ParamField>
+
+### Source Document
+
+<ParamField query="include_source" type="boolean" default="false">
+  When `true`, includes `source_document`, `source_link`, and `page_number` fields in each result.
+</ParamField>
+
+## Request Examples
+
+**Basic request — latest CBOE BZX options fees:**
+
+```bash
+curl -X GET "https://api.rulebookcompany.com/api/v1/fee-schedule-results?exchange_name=fee_cboe_us_bzx_options&fee_type=option&latest_only=true" \
+  -H "x-rulebook-api-access-key: YOUR_API_KEY"
+```
+
+**Multi-exchange Market Maker Make fees:**
+
+```bash
+curl -X GET "https://api.rulebookcompany.com/api/v1/fee-schedule-results?exchange_name=fee_nyse_arca_options&exchange_name=fee_cboe_us_bzx_options&fee_action=make&fee_participant=market_maker&latest_only=true&page_size=50" \
+  -H "x-rulebook-api-access-key: YOUR_API_KEY"
+```
+
+**Penny ETF fees scraped in 2025, with source document:**
+
+```bash
+curl -X GET "https://api.rulebookcompany.com/api/v1/fee-schedule-results/?fee_symbol_classification=etf&fee_symbol_type=penny&start_date=2025-01-01&end_date=2025-12-31&include_source=true" \
+  -H "x-rulebook-api-access-key: YOUR_API_KEY"
+```
+
+## Response
+
+<ResponseField name="data" type="array">
+  Array of fee schedule result objects
+
+  <Expandable title="Fee Schedule Result">
+    <ResponseField name="record_id" type="string (uuid)">
+      Unique identifier
+    </ResponseField>
+
+    <ResponseField name="exchange_name" type="string">
+      Exchange identifier (matches the `name` field from [List Exchanges](/api-reference/endpoint/list-exchanges))
+    </ResponseField>
+
+    <ResponseField name="scraped_time" type="string (date-time)">
+      When the fee schedule was scraped from the exchange
+    </ResponseField>
+
+    <ResponseField name="version_id" type="string (uuid)">
+      Fee extraction version identifier. Use with the [Get Results by Version](/api-reference/endpoint/fee-schedule-results-by-version) endpoint to fetch all fees from this version.
+    </ResponseField>
+
+    <ResponseField name="fee_type" type="string">
+      Fee type: `option` or `equity`
+    </ResponseField>
+
+    <ResponseField name="source_document" type="string | null">
+      Title of the source fee schedule document. Only present when `include_source=true`.
+    </ResponseField>
+
+    <ResponseField name="source_link" type="string | null">
+      URL to the source fee schedule document on CDN. Only present when `include_source=true`.
+    </ResponseField>
+
+    <ResponseField name="page_number" type="integer | null">
+      Page number in the source document where this fee was extracted. Only present when `include_source=true`.
+    </ResponseField>
+
+    <ResponseField name="fee_category" type="string">
+      Fee category
+    </ResponseField>
+
+    <ResponseField name="fee_charge_type" type="string">
+      Whether this is a charge or rebate
+    </ResponseField>
+
+    <ResponseField name="fee_amount" type="string">
+      Fee or rebate amount (may include currency, ranges, or tier descriptions)
+    </ResponseField>
+
+    <ResponseField name="fee_action" type="string">
+      Trading action type: `make`, `take`, `open`, `routed`, `other`
+    </ResponseField>
+
+    <ResponseField name="fee_action_details" type="string | null">
+      Additional action details
+    </ResponseField>
+
+    <ResponseField name="fee_basis" type="string | null">
+      Basis for fee calculation (per share, per contract, percentage, etc.)
+    </ResponseField>
+
+    <ResponseField name="fee_participant" type="string">
+      Market participant type
+    </ResponseField>
+
+    <ResponseField name="fee_participant_details" type="string | null">
+      Additional participant classification details
+    </ResponseField>
+
+    <ResponseField name="fee_monthly_volume" type="string | null">
+      Monthly volume threshold for tiered pricing
+    </ResponseField>
+
+    <ResponseField name="fee_monthly_volume_criteria" type="string | null">
+      Criteria used to determine volume tier
+    </ResponseField>
+
+    <ResponseField name="fee_symbol_classification" type="string | null">
+      Symbol classification: `etf`, `etn`, `equity_class`, `index`, `not_applicable`, `all`
+    </ResponseField>
+
+    <ResponseField name="fee_symbol_type" type="string | null">
+      Penny or Non-Penny classification
+    </ResponseField>
+
+    <ResponseField name="fee_trade_type" type="string | null">
+      Trade type
+    </ResponseField>
+
+    <ResponseField name="fee_symbol" type="string | null">
+      Specific symbol(s) this fee applies to
+    </ResponseField>
+
+    <ResponseField name="fee_excluded_symbols" type="string | null">
+      Symbols excluded from this fee
+    </ResponseField>
+
+    <ResponseField name="fee_conditions" type="string | null">
+      Conditions that must be met
+    </ResponseField>
+
+    <ResponseField name="fee_exclusions" type="string | null">
+      Scenarios where this fee does not apply
+    </ResponseField>
+
+    <ResponseField name="fee_notes" type="string | null">
+      Additional notes or context
+    </ResponseField>
+
+    <ResponseField name="fee_extra_info" type="string | null">
+      Additional information
+    </ResponseField>
+
+    <ResponseField name="relationships" type="object | null">
+      Related footnotes and definitions from the source document. Only included when `include_footnotes` or `include_definitions` query parameters are set to `true`.
+
+      <Expandable title="Relationships">
+        <ResponseField name="footnotes" type="array">
+          Array of footnote objects, each with a `text` field
+        </ResponseField>
+
+        <ResponseField name="definitions" type="array">
+          Array of definition objects, each with `term` and `text` fields
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="meta" type="object">
+  Pagination and performance metadata
+
+  <Expandable title="Meta">
+    <ResponseField name="record_count" type="integer">
+      Total records matching the filter criteria (across all pages)
+    </ResponseField>
+
+    <ResponseField name="total_pages" type="integer">
+      Total number of pages
+    </ResponseField>
+
+    <ResponseField name="current_page" type="integer">
+      Current page number (0-indexed)
+    </ResponseField>
+
+    <ResponseField name="page_size" type="integer">
+      Records per page
+    </ResponseField>
+
+    <ResponseField name="query_time_ms" type="integer | null">
+      Query execution time in milliseconds
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Example Response
+
+```json
+{
+  "data": [
+    {
+      "record_id": "ae619174-ca79-432a-b437-b653cb6e145b",
+      "exchange_name": "fee_nyse_arca_options",
+      "scraped_time": "2026-02-26T00:00:50.839337Z",
+      "version_id": "7c139e34-7c0e-4535-adb5-8538f47f9d63",
+      "fee_type": "option",
+      "source_document": null,
+      "source_link": null,
+      "page_number": null,
+      "fee_category": "fees_and_rebates",
+      "fee_charge_type": "Manual Billable Rebate Program",
+      "fee_amount": "($0.01)",
+      "fee_action": "other",
+      "fee_action_details": "Additional rebate on QCC contracts",
+      "fee_basis": "per two billable side QCC contract",
+      "fee_participant": "other",
+      "fee_participant_details": "Floor Brokers in FB Prepay Program",
+      "fee_monthly_volume": null,
+      "fee_monthly_volume_criteria": null,
+      "fee_symbol_classification": "all",
+      "fee_symbol_type": "both",
+      "fee_trade_type": null,
+      "fee_symbol": "{All}",
+      "fee_excluded_symbols": "{}",
+      "fee_conditions": "Participants in the FB Prepay Program are eligible for an additional rebate if they exceed the aggregate of QCC Tier 1 and QCC Tier 2 qualifications in combined manual billable and QCC billable contracts.",
+      "fee_exclusions": "Excludes QCCs and transactions described in Endnote 12",
+      "fee_notes": null,
+      "fee_extra_info": "Payable back to the first billable side.",
+      "relationships": null
+    }
+  ],
+  "meta": {
+    "record_count": 4242,
+    "total_pages": 4242,
+    "current_page": 0,
+    "page_size": 1,
+    "query_time_ms": 10479
+  }
+}
+```
+
+## Pagination
+
+<Steps>
+  <Step title="Make your first request">
+    The response `meta` includes `record_count` and `total_pages` so you know the full dataset size.
+  </Step>
+
+  <Step title="Iterate through pages">
+    Increment `page_number` from `0` to `total_pages - 1`:
+
+    - Page 1: `?page_number=0&page_size=50`
+    - Page 2: `?page_number=1&page_size=50`
+    - Page 3: `?page_number=2&page_size=50`
+
+  </Step>
+</Steps>
+
+## Error Responses
+
+<ResponseExample>
+```json 401 Unauthorized
+{
+  "error": {
+    "code": "UNAUTHORIZED",
+    "message": "Missing or invalid API key."
+  },
+  "meta": { "query_time_ms": 1 }
+}
+```
+
+```json 422 Validation Error
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Invalid query parameters.",
+    "details": []
+  },
+  "meta": { "query_time_ms": 1 }
+}
+```
+
+</ResponseExample>

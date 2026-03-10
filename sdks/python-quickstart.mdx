@@ -1,0 +1,324 @@
+---
+title: 'Python SDK'
+description: 'Install and start using the Rulebook Python SDK'
+---
+
+## Installation
+
+```bash
+pip install rulebook-sdk
+```
+
+<Note>
+  Requires Python 3.11+. The SDK depends on `httpx` and `pydantic`.
+</Note>
+
+## Initialize the Client
+
+```python
+from rulebook import Rulebook
+
+client = Rulebook(api_key="your-api-key")
+```
+
+Or set the `RULEBOOK_API_KEY` environment variable and omit the parameter:
+
+```bash
+export RULEBOOK_API_KEY="your-api-key"
+```
+
+```python
+from rulebook import Rulebook
+
+client = Rulebook()  # reads from RULEBOOK_API_KEY
+```
+
+You can also override the base URL via the `RULEBOOK_BASE_URL` environment variable:
+
+```bash
+export RULEBOOK_BASE_URL="https://your-custom-endpoint/api/v1"
+```
+
+## List Exchanges
+
+```python
+exchanges = client.exchanges.list()
+
+for ex in exchanges:
+    print(f"{ex.name} ({ex.display_name})")
+    print(f"  Fee types: {ex.fee_types}")
+    print(f"  Records: {ex.record_count}")
+```
+
+**Response type:** `list[Exchange]`
+
+| Field          | Type         | Description                        |
+|----------------|--------------|------------------------------------|
+| `name`         | `str`        | Exchange identifier (e.g., "NYSE") |
+| `display_name` | `str`        | Human-readable name                |
+| `fee_types`    | `list[str]`  | Available fee types                |
+| `record_count` | `int`        | Total fee schedule records         |
+
+## Get Exchange Details
+
+```python
+detail = client.exchanges.retrieve("NYSE")
+
+print(f"Date range: {detail.date_range.earliest} to {detail.date_range.latest}")
+print(f"Actions: {detail.actions}")
+print(f"Participants: {detail.participants}")
+print(f"Fee categories: {detail.fee_categories}")
+```
+
+**Response type:** `ExchangeDetail`
+
+<Expandable title="ExchangeDetail fields">
+| Field                    | Type         | Description                                   |
+|--------------------------|--------------|-----------------------------------------------|
+| `name`                   | `str`        | Exchange identifier                            |
+| `display_name`           | `str`        | Human-readable name                            |
+| `date_range`             | `DateRange`  | `.earliest` and `.latest` (YYYY-MM-DD)         |
+| `fee_types`              | `list[str]`  | Available fee types                            |
+| `fee_categories`         | `list[str]`  | Available fee categories                       |
+| `actions`                | `list[str]`  | Available trading actions                      |
+| `participants`           | `list[str]`  | Available participant types                    |
+| `symbol_classifications` | `list[str]`  | Available symbol classifications               |
+| `symbol_types`           | `list[str]`  | Available symbol types                         |
+| `trade_types`            | `list[str]`  | Available trade types                          |
+| `record_count`           | `int`        | Total records for this exchange                |
+</Expandable>
+
+## List Fee Schedule Results
+
+```python
+page = client.fee_schedule_results.list(
+    exchange_name=["CBOE"],
+    fee_type=["Option"],
+    fee_participant=["Market Maker"],
+    latest_only=True,
+    page_size=10,
+)
+
+print(f"Total results: {page.total_records}")
+for result in page.data:
+    print(f"  {result.fee_action}: {result.fee_amount} ({result.fee_symbol_type})")
+```
+
+**Response type:** `PaginatedResponse[FeeScheduleResult]`
+
+| Field           | Type                      | Description                       |
+|-----------------|---------------------------|-----------------------------------|
+| `data`          | `list[FeeScheduleResult]` | Array of result objects           |
+| `total_records` | `int`                     | Total records matching the query  |
+| `page_size`     | `int`                     | Records per page                  |
+| `total_pages`   | `int`                     | Total number of pages             |
+| `current_page`  | `int`                     | Current page number (0-indexed)   |
+| `query_time_ms` | `int | None`              | Query execution time in milliseconds |
+
+**Filter parameters:**
+
+| Parameter                   | Type              | Description                        |
+|-----------------------------|-------------------|------------------------------------|
+| `exchange_name`             | `list[str]`       | Filter by exchange name(s)         |
+| `fee_type`                  | `list[str]`       | Filter by fee type(s)              |
+| `fee_category`              | `list[str]`       | Filter by fee category(s)          |
+| `fee_action`                | `list[str]`       | Filter by trading action(s)        |
+| `fee_participant`           | `list[str]`       | Filter by participant type(s)      |
+| `fee_symbol_classification` | `list[str]`       | Filter by symbol classification(s) |
+| `fee_symbol_type`           | `list[str]`       | Filter by symbol type(s)           |
+| `fee_trade_type`            | `list[str]`       | Filter by trade type(s)            |
+| `start_date`                | `str`             | Filter by scraped date (YYYY-MM-DD)|
+| `end_date`                  | `str`             | Filter by scraped date (YYYY-MM-DD)|
+| `latest_only`               | `bool`            | Only latest version per exchange   |
+| `include_footnotes`         | `bool`            | Include footnotes in `relationships` |
+| `include_definitions`       | `bool`            | Include definitions in `relationships` |
+| `include_source`            | `bool`            | Include `source_document`, `source_link`, `page_number` |
+| `order_by`                  | `str`             | Sort field (default: `created_on`) |
+| `order_dir`                 | `str`             | Sort direction: `asc` or `desc`    |
+| `page_size`                 | `int`             | Records per page (1–100)           |
+| `page_number`               | `int`             | Page number (0-indexed)            |
+
+## Get a Single Fee Schedule Result
+
+```python
+result = client.fee_schedule_results.retrieve(
+    "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    include_footnotes=True,
+    include_definitions=True,
+    include_source=True,
+)
+
+print(f"{result.exchange_name} — {result.fee_type} — {result.fee_category}")
+print(f"  Action: {result.fee_action}")
+print(f"  Amount: {result.fee_amount}")
+print(f"  Participant: {result.fee_participant}")
+print(f"  Source: {result.source_document} (p.{result.page_number})")
+
+if result.relationships:
+    for fn in result.relationships.footnotes:
+        print(f"  Footnote: {fn.text}")
+    for defn in result.relationships.definitions:
+        print(f"  Definition: {defn.term} — {defn.text}")
+```
+
+| Parameter              | Type   | Default | Description                                            |
+|------------------------|--------|---------|--------------------------------------------------------|
+| `include_footnotes`    | `bool` | `False` | Include footnotes in `relationships`                   |
+| `include_definitions`  | `bool` | `False` | Include definitions in `relationships`                 |
+| `include_source`       | `bool` | `False` | Include `source_document`, `source_link`, `page_number`|
+
+**Response type:** `FeeScheduleResult`
+
+<Expandable title="FeeScheduleResult fields">
+| Field                       | Type                    | Description                            |
+|-----------------------------|-------------------------|----------------------------------------|
+| `record_id`                 | `str`                   | Unique identifier (UUID)               |
+| `exchange_name`             | `str`                   | Exchange name                          |
+| `fee_type`                  | `str`                   | Fee type (Option, Equity)              |
+| `fee_category`              | `str`                   | Fee category                           |
+| `fee_charge_type`           | `str \| None`           | Fee or Rebate                          |
+| `fee_amount`                | `str \| None`           | Fee/rebate amount                      |
+| `fee_action`                | `str \| None`           | Trading action (Make, Take, etc.)      |
+| `fee_action_details`        | `str \| None`           | Additional action details              |
+| `fee_basis`                 | `str \| None`           | Basis for fee calculation              |
+| `fee_notes`                 | `str \| None`           | Additional notes                       |
+| `fee_participant`           | `str \| None`           | Market participant type                |
+| `fee_participant_details`   | `str \| None`           | Participant classification details     |
+| `fee_monthly_volume`        | `str \| None`           | Volume threshold for tiered pricing    |
+| `fee_monthly_volume_criteria`| `str \| None`          | Volume tier criteria                   |
+| `fee_symbol_classification` | `str \| None`           | Symbol classification                  |
+| `fee_symbol_type`           | `str \| None`           | Penny/Non-Penny classification         |
+| `fee_trade_type`            | `str \| None`           | Trade type                             |
+| `fee_symbol`                | `str \| None`           | Specific symbol(s)                     |
+| `fee_excluded_symbols`      | `str \| None`           | Excluded symbols                       |
+| `fee_conditions`            | `str \| None`           | Conditions for this fee                |
+| `fee_exclusions`            | `str \| None`           | Exclusion scenarios                    |
+| `fee_extra_info`            | `str \| None`           | Additional information                 |
+| `source_document`           | `str \| None`           | Source document name (when `include_source=True`) |
+| `source_link`               | `str \| None`           | Source document URL (when `include_source=True`)  |
+| `page_number`               | `int \| None`           | Page in source doc (when `include_source=True`)   |
+| `version_id`                | `str \| None`           | Extraction version UUID                |
+| `scraped_time`              | `str \| None`           | When the fee schedule was scraped      |
+| `relationships`             | `Relationships \| None` | Footnotes and definitions (when `include_footnotes` or `include_definitions`) |
+</Expandable>
+
+## Get Available Filters
+
+Discover valid filter values before querying results:
+
+```python
+filters = client.fee_schedule_results.get_filters()
+
+print(f"Exchanges: {filters.exchange_names}")
+print(f"Fee types: {filters.fee_types}")
+print(f"Categories: {filters.fee_categories}")
+print(f"Actions: {filters.fee_actions}")
+print(f"Participants: {filters.fee_participants}")
+```
+
+Optionally narrow filter values to specific exchanges:
+
+```python
+filters = client.fee_schedule_results.get_filters(
+    exchange_name=["fee_cboe_us_options", "fee_nyse_arca_options"]
+)
+```
+
+**Response type:** `FeeScheduleResultFilters`
+
+| Field                       | Type        | Description                    |
+|-----------------------------|-------------|--------------------------------|
+| `exchange_names`            | `list[str]` | Available exchange names       |
+| `fee_types`                 | `list[str]` | Available fee types            |
+| `fee_categories`            | `list[str]` | Available fee categories       |
+| `fee_actions`               | `list[str]` | Available trading actions      |
+| `fee_participants`          | `list[str]` | Available participant types    |
+| `fee_symbol_classifications`| `list[str]` | Available symbol classifications|
+| `fee_symbol_types`          | `list[str]` | Available symbol types         |
+| `fee_trade_types`           | `list[str]` | Available trade types          |
+
+## Get Results by Version
+
+Retrieve all fee schedule results from a specific extraction version:
+
+```python
+page = client.fee_schedule_results.get_results_by_version(
+    "f7e8d9c0-b1a2-3456-7890-abcdef123456",
+    include_source=True,
+    include_footnotes=True,
+    page_size=50,
+)
+
+print(f"Version has {page.total_records} results ({page.total_pages} pages)")
+for result in page.data:
+    print(f"  {result.fee_action}: {result.fee_amount}")
+    if result.source_document:
+        print(f"    Source: {result.source_document} (p.{result.page_number})")
+```
+
+## Pagination
+
+Fee schedule results are paginated. Use `page_number` and `page_size` to iterate:
+
+```python
+page_number = 0
+total_fetched = 0
+
+while True:
+    page = client.fee_schedule_results.list(
+        latest_only=True,
+        page_size=50,
+        page_number=page_number,
+    )
+    total_fetched += len(page.data)
+    print(f"Page {page_number + 1}/{page.total_pages}: {len(page.data)} results")
+
+    if page_number >= page.total_pages - 1:
+        break
+    page_number += 1
+
+print(f"Fetched {total_fetched} of {page.total_records} total results")
+```
+
+## Async Client
+
+```python
+import asyncio
+from rulebook import AsyncRulebook
+
+async def main():
+    async with AsyncRulebook(api_key="your-key") as client:
+        exchanges = await client.exchanges.list()
+        detail = await client.exchanges.retrieve("NYSE")
+
+        page = await client.fee_schedule_results.list(
+            exchange_name=["CBOE"],
+            latest_only=True,
+        )
+        filters = await client.fee_schedule_results.get_filters()
+
+asyncio.run(main())
+```
+
+The async client has an identical API surface — every method is `await`-able.
+
+## Context Manager
+
+Both clients support context managers for automatic cleanup:
+
+```python
+with Rulebook(api_key="your-key") as client:
+    exchanges = client.exchanges.list()
+# Connection pool is cleaned up here
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Error Handling" icon="triangle-exclamation" href="/sdks/python-errors">
+    Handle API errors with typed exceptions
+  </Card>
+  <Card title="Advanced Usage" icon="gear" href="/sdks/python-advanced">
+    Timeouts, retries, raw responses, and per-request overrides
+  </Card>
+</CardGroup>

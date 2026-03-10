@@ -1,0 +1,267 @@
+---
+title: "Get Exchange Details"
+description: "Get full metadata and available filter values for a specific exchange"
+openapi: "api-reference/openapi.json GET /exchanges/{exchange_name}"
+---
+
+## Overview
+
+Returns full metadata for a single exchange, including all available filter values: fee types, fee categories, actions, participants, symbol classifications, symbol types, trade types, and the date range of available data.
+
+The values returned in the filter arrays are the exact values to pass as query parameters when calling [List Fee Schedule Results](/api-reference/endpoint/fee-schedule-results).
+
+<Note>
+  **Authorization Required** - Include your API key in the
+  `x-rulebook-api-access-key` header. Contact
+  [aaron@rulebookcompany.com](mailto:aaron@rulebookcompany.com) to obtain
+  access.
+</Note>
+
+<Tip>
+  This endpoint consolidates all discovery information into a single call.
+  Instead of making separate requests for fee types, categories, actions, and
+  participants, get everything at once.
+</Tip>
+
+## Path Parameters
+
+<ParamField path="exchange_name" type="string" required>
+  Exchange identifier (e.g., `fee_cboe_us_bzx_options`, `nasdaqphlx`). Get the list of
+  available exchanges from [List
+  Exchanges](/api-reference/endpoint/list-exchanges).
+</ParamField>
+
+## Request
+
+```bash
+curl -X GET https://api.rulebookcompany.com/api/v1/exchanges/fee_cboe_us_bzx_options \
+  -H "x-rulebook-api-access-key: YOUR_API_KEY"
+```
+
+## Response
+
+<ResponseField name="data" type="object">
+  Exchange detail object
+
+  <Expandable title="Exchange Detail">
+    <ResponseField name="name" type="string">
+      Exchange identifier
+    </ResponseField>
+
+    <ResponseField name="display_name" type="string">
+      Human-readable exchange name
+    </ResponseField>
+
+    <ResponseField name="date_range" type="object">
+      Earliest and latest dates with available data
+
+      <Expandable title="Date Range">
+        <ResponseField name="earliest" type="string (date)">
+          Earliest scraped date
+        </ResponseField>
+        <ResponseField name="latest" type="string (date)">
+          Latest scraped date
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+
+    <ResponseField name="fee_types" type="string[]">
+      Available fee types. Use these values in the `fee_type` filter parameter.
+    </ResponseField>
+
+    <ResponseField name="fee_categories" type="string[]">
+      Available fee categories. Use these values in the `fee_category` filter parameter.
+    </ResponseField>
+
+    <ResponseField name="actions" type="string[]">
+      Available trading action types. Use these values in the `fee_action` filter parameter.
+    </ResponseField>
+
+    <ResponseField name="participants" type="string[]">
+      Available participant types. Use these values in the `fee_participant` filter parameter.
+    </ResponseField>
+
+    <ResponseField name="symbol_classifications" type="string[]">
+      Available symbol classifications. Use these values in the `fee_symbol_classification` filter parameter.
+    </ResponseField>
+
+    <ResponseField name="symbol_types" type="string[]">
+      Available symbol types. Use these values in the `fee_symbol_type` filter parameter.
+    </ResponseField>
+
+    <ResponseField name="trade_types" type="string[]">
+      Available trade types. Use these values in the `fee_trade_type` filter parameter. May be empty if no trade type data exists for this exchange.
+    </ResponseField>
+
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="meta" type="object">
+  Response metadata
+
+  <Expandable title="Meta">
+    <ResponseField name="record_count" type="integer">
+      Total fee schedule records for this exchange
+    </ResponseField>
+
+    <ResponseField name="query_time_ms" type="integer | null">
+      Query execution time in milliseconds
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Example Response
+
+```json
+{
+  "data": {
+    "name": "fee_cboe_us_bzx_options",
+    "display_name": "Fee - CBOE US BZX Options",
+    "date_range": {
+      "earliest": "2025-12-08",
+      "latest": "2026-02-09"
+    },
+    "fee_types": ["option"],
+    "fee_categories": [
+      "fees_and_rebates",
+      "legal_regulatory_fee",
+      "market_data_fees",
+      "participant_fee",
+      "port_fees_and_other_services"
+    ],
+    "actions": ["make", "open", "other", "routed", "take"],
+    "participants": [
+      "all",
+      "away_market_maker",
+      "customer",
+      "firm",
+      "market_maker",
+      "other",
+      "professional"
+    ],
+    "symbol_classifications": ["all", "index", "not_applicable"],
+    "symbol_types": ["both", "non_penny", "not_applicable", "penny"],
+    "trade_types": []
+  },
+  "meta": {
+    "record_count": 748,
+    "query_time_ms": 7504
+  }
+}
+```
+
+## Using Exchange Details to Build Queries
+
+Use the returned filter values directly as query parameters:
+
+```bash
+# Step 1: Get exchange details to see available filters
+curl -X GET https://api.rulebookcompany.com/api/v1/exchanges/fee_cboe_us_bzx_options \
+  -H "x-rulebook-api-access-key: YOUR_API_KEY"
+
+# Step 2: Use the returned values as filter params
+curl -X GET "https://api.rulebookcompany.com/api/v1/fee-schedule-results?exchange_name=fee_cboe_us_bzx_options&fee_type=option&fee_action=make&fee_participant=market_maker&latest_only=true" \
+  -H "x-rulebook-api-access-key: YOUR_API_KEY"
+```
+
+## Reference: Filter Value Descriptions
+
+<AccordionGroup>
+  <Accordion title="Fee Categories">
+    | Value | Description |
+    |---|---|
+    | `fees_and_rebates` | Standard trading fees and liquidity rebates |
+    | `general_provisions` | General rules and provisions applicable to fees |
+    | `legal_regulatory_fee` | SEC fees, FINRA TAF, and other regulatory charges |
+    | `market_data_fees` | Real-time and delayed market data subscription fees |
+    | `participant_fee` | Membership and participation fees |
+    | `port_fees_and_other_services` | Network connectivity, co-location, and port fees |
+  </Accordion>
+
+  <Accordion title="Actions">
+    | Value | Description |
+    |---|---|
+    | `make` | Orders that add liquidity (typically receive rebates) |
+    | `take` | Orders that remove liquidity (typically charged fees) |
+    | `open` | Opening auction transactions |
+    | `routed` | Orders routed to other venues |
+    | `other` | Miscellaneous action types |
+  </Accordion>
+
+  <Accordion title="Participants">
+    | Value | Description |
+    |---|---|
+    | `all` | Aggregated across all participant types |
+    | `market_maker` | Exchange-designated market makers with quoting obligations |
+    | `away_market_maker` | Market makers registered at other exchanges |
+    | `broker_dealer` | Registered broker-dealer firms |
+    | `customer` | Retail and institutional customers |
+    | `firm` | Proprietary trading firms |
+    | `professional` | Professional individual traders |
+    | `other` | Other participant categories |
+  </Accordion>
+
+  <Accordion title="Symbol Classifications">
+    | Value | Description |
+    |---|---|
+    | `etf` | Exchange Traded Funds |
+    | `etn` | Exchange Traded Notes |
+    | `equity_class` | Equity securities |
+    | `index` | Index options |
+    | `all` | All classifications |
+    | `not_applicable` | Not applicable |
+  </Accordion>
+
+  <Accordion title="Symbol Types">
+    | Value | Description |
+    |---|---|
+    | `penny` | Penny increment symbols |
+    | `non_penny` | Non-penny increment symbols |
+    | `both` | Applies to both |
+    | `not_applicable` | Not applicable |
+  </Accordion>
+
+  <Accordion title="Trade Types">
+    | Value | Description |
+    |---|---|
+    | `simple_order` | Simple (single-leg) orders |
+    | `complex_order` | Complex/multi-leg orders |
+    | `index_options` | Index option trades |
+    | `multiply_traded_options` | Multiply-listed options |
+  </Accordion>
+</AccordionGroup>
+
+## Error Responses
+
+<ResponseExample>
+```json 401 Unauthorized
+{
+  "error": {
+    "code": "UNAUTHORIZED",
+    "message": "Missing or invalid API key."
+  },
+  "meta": { "query_time_ms": 1 }
+}
+```
+
+```json 403 Forbidden
+{
+  "error": {
+    "code": "FORBIDDEN",
+    "message": "You do not have access to the requested exchange."
+  },
+  "meta": { "query_time_ms": 1 }
+}
+```
+
+```json 404 Not Found
+{
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "Exchange not found."
+  },
+  "meta": { "query_time_ms": 1 }
+}
+```
+
+</ResponseExample>

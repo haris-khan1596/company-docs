@@ -1,0 +1,161 @@
+---
+title: 'Advanced Usage'
+description: 'Timeouts, retries, raw responses, and per-request overrides'
+---
+
+## Client Configuration
+
+All configuration options with their defaults:
+
+```typescript
+import { Rulebook } from "rulebook-sdk";
+
+const client = new Rulebook({
+  apiKey: "your-key",                                      // required (or RULEBOOK_API_KEY env var)
+  baseUrl: "https://api.rulebookcompany.com/api/v1",       // default (or RULEBOOK_BASE_URL env var)
+  timeout: 30000,                                          // milliseconds, default 30000
+  maxRetries: 2,                                           // default 2
+  defaultHeaders: { "X-Custom": "value" },                 // merged into every request
+  defaultQuery: { customParam: "value" },                  // merged into every request
+});
+```
+
+## Timeouts
+
+### Client-level timeout
+
+```typescript
+// All requests use a 60-second timeout
+const client = new Rulebook({ apiKey: "your-key", timeout: 60000 });
+```
+
+### Per-request timeout
+
+```typescript
+// Override timeout for a single request
+const detail = await client.exchanges.retrieve("NYSE", { timeout: 120000 });
+```
+
+### Disable timeout
+
+```typescript
+const detail = await client.exchanges.retrieve("NYSE", { timeout: 0 });
+```
+
+## Retries
+
+The SDK automatically retries on connection errors, timeouts, and HTTP 408/409/429/5xx
+responses with exponential backoff (starting at 0.5s, max 8s, with jitter).
+
+```typescript
+// Set max retries
+const client = new Rulebook({ apiKey: "your-key", maxRetries: 5 });
+
+// Disable retries for a single request
+const noRetryClient = client.withOptions({ maxRetries: 0 });
+await noRetryClient.exchanges.retrieve("NYSE");
+```
+
+## `withOptions()` — Client Overrides
+
+Create a new client with overridden settings without mutating the original:
+
+```typescript
+const client = new Rulebook({ apiKey: "your-key" });
+
+// Create a variant with different timeout
+const slowClient = client.withOptions({ timeout: 120000 });
+
+// Create a variant with extra headers
+const debugClient = client.withOptions({ defaultHeaders: { "X-Debug": "true" } });
+
+// Original client is unmodified
+```
+
+## Per-Request Overrides
+
+Every resource method accepts an options object for single-request customization:
+
+```typescript
+// Extra headers
+const exchanges = await client.exchanges.list({
+  extra_headers: { "X-Request-Id": "abc-123" },
+});
+
+// Extra query parameters
+const exchanges = await client.exchanges.list({
+  extra_query: { customParam: "value" },
+});
+
+// Custom timeout
+const detail = await client.exchanges.retrieve("NYSE", { timeout: 60000 });
+
+// Combine them
+const detail = await client.exchanges.retrieve("NYSE", {
+  extra_headers: { "X-Trace-Id": "xyz" },
+  timeout: 90000,
+});
+```
+
+## Raw Response Access
+
+Access the raw HTTP response (headers, status code) while still getting typed parsing:
+
+```typescript
+const raw = await client.exchanges.withRawResponse.retrieve("NYSE");
+
+console.log(raw.statusCode);                  // 200
+console.log(raw.headers.get("content-type")); // application/json
+
+// Parse the body on demand
+const detail = raw.parse();                   // ExchangeDetail
+console.log(detail.name);                     // "NYSE"
+```
+
+Works with all resources including fee schedule results:
+
+```typescript
+const raw = await client.feeScheduleResults.withRawResponse.list({
+  exchange_name: ["CBOE"],
+  latest_only: true,
+});
+
+console.log(raw.statusCode);                  // 200
+const page = raw.parse();                     // PaginatedResponse<FeeScheduleResult>
+console.log(page.total_records);
+```
+
+This is useful for:
+- Inspecting response headers (rate limit info, request IDs)
+- Debugging API interactions
+- Accessing metadata not included in the typed model
+
+<Warning>
+  Raw response methods bypass the SDK's automatic retry logic. If a request made
+  via `withRawResponse` fails due to a transient error (timeout, 429, 5xx), it
+  will not be retried automatically. Handle retries manually when using raw responses.
+</Warning>
+
+## Using Types Directly
+
+All response models are available for import and type annotation:
+
+```typescript
+import { Rulebook } from "rulebook-sdk";
+import type {
+  Exchange,
+  ExchangeDetail,
+  DateRange,
+  FeeScheduleResult,
+  FeeScheduleResultFilters,
+  PaginatedResponse,
+} from "rulebook-sdk/types";
+
+function summarizeResult(result: FeeScheduleResult): string {
+  return `${result.exchange_name} — ${result.fee_action}: ${result.fee_amount}`;
+}
+
+const client = new Rulebook({ apiKey: "your-key" });
+const page = await client.feeScheduleResults.list({ latest_only: true });
+const summaries = page.data.map(summarizeResult);
+```

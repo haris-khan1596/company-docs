@@ -1,0 +1,71 @@
+---
+title: Authentication
+description: Learn how to authenticate with the Rulebook Company API
+---
+
+# Authentication
+
+The Rulebook Company API uses API access keys to authenticate requests. You can obtain your API key by contacting our sales team.
+
+## API Access Key
+
+Include your API key in the `x-rulebook-api-access-key` header with every request:
+
+```bash
+curl https://api.rulebookcompany.com/api/v1/exchanges \
+  -H "x-rulebook-api-access-key: YOUR_API_KEY"
+```
+
+<Warning>
+  Keep your API keys secure and never commit them to version control.
+</Warning>
+
+## Request Format
+
+All API requests must be made over HTTPS. Calls made over plain HTTP will fail.
+
+```json
+{
+  "headers": {
+    "x-rulebook-api-access-key": "YOUR_API_KEY"
+  }
+}
+```
+
+All endpoints return JSON responses. No `Content-Type` header is required for GET requests.
+
+## Security Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Use Environment Variables" icon="lock">
+    Store API keys in environment variables, never in code
+  </Card>
+  <Card title="Limit Key Scope" icon="shield">
+    Create separate keys for different environments
+  </Card>
+</CardGroup>
+
+## Getting Your API Key
+
+<Note>
+  **Contact Sales for API Access** — To obtain your API access key, please
+  contact our sales team at
+  [aaron@rulebookcompany.com](mailto:aaron@rulebookcompany.com) or through our
+  [website](https://rulebookcompany.com).
+</Note>
+
+Once you receive your API credentials:
+
+1. Store your key securely in an environment variable
+2. Add the `x-rulebook-api-access-key` header to all API requests
+3. Test with a simple call to [List Exchanges](/api-reference/endpoint/list-exchanges)
+
+```bash
+# Test your API key
+curl -X GET https://api.rulebookcompany.com/api/v1/exchanges \
+  -H "x-rulebook-api-access-key: YOUR_API_KEY"
+```
+
+<Tip>
+  You can create multiple API keys for different applications or environments.
+</Tip>

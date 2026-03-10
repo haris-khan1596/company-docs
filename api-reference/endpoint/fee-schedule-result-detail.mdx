@@ -1,0 +1,275 @@
+---
+title: "Get Fee Schedule Result"
+description: "Retrieve a single fee schedule result by ID"
+openapi: "api-reference/openapi.json GET /fee-schedule-results/{record_id}"
+---
+
+## Overview
+
+Returns a single fee schedule result by its unique ID. Access is scoped — you can only retrieve results for exchanges associated with your API key.
+
+<Note>
+  **Authorization Required** - Include your API key in the
+  `x-rulebook-api-access-key` header. Contact
+  [aaron@rulebookcompany.com](mailto:aaron@rulebookcompany.com) to obtain
+  access.
+</Note>
+
+## Path Parameters
+
+<ParamField path="record_id" type="string (uuid)" required>
+  Unique identifier of the fee schedule result. Obtain IDs from the [List Fee
+  Schedule Results](/api-reference/endpoint/fee-schedule-results) endpoint.
+</ParamField>
+
+## Query Parameters
+
+<ParamField query="include_footnotes" type="boolean" default="false">
+  When `true`, includes resolved footnotes from the source document in the `relationships` field.
+</ParamField>
+
+<ParamField query="include_definitions" type="boolean" default="false">
+  When `true`, includes resolved definitions from the source document in the `relationships` field.
+</ParamField>
+
+<ParamField query="include_source" type="boolean" default="false">
+  When `true`, includes `source_document`, `source_link`, and `page_number` fields in the result.
+</ParamField>
+
+## Request
+
+```bash
+curl -X GET "https://api.rulebookcompany.com/api/v1/fee-schedule-results/a1b2c3d4-e5f6-7890-abcd-ef1234567890" \
+  -H "x-rulebook-api-access-key: YOUR_API_KEY"
+```
+
+### With Source and Relationships
+
+```bash
+curl -X GET "https://api.rulebookcompany.com/api/v1/fee-schedule-results/ae619174-ca79-432a-b437-b653cb6e145b?include_source=true&include_footnotes=true&include_definitions=true" \
+  -H "x-rulebook-api-access-key: YOUR_API_KEY"
+```
+
+## Response
+
+<ResponseField name="data" type="object">
+  Fee schedule result object (same schema as items in the list endpoint)
+
+  <Expandable title="Fee Schedule Result">
+    <ResponseField name="record_id" type="string (uuid)">
+      Unique identifier
+    </ResponseField>
+
+    <ResponseField name="exchange_name" type="string">
+      Exchange identifier (matches the `name` field from [List Exchanges](/api-reference/endpoint/list-exchanges))
+    </ResponseField>
+
+    <ResponseField name="scraped_time" type="string (date-time)">
+      When the fee schedule was scraped
+    </ResponseField>
+
+    <ResponseField name="version_id" type="string (uuid)">
+      Fee extraction version identifier
+    </ResponseField>
+
+    <ResponseField name="fee_type" type="string">
+      Fee type: `option` or `equity`
+    </ResponseField>
+
+    <ResponseField name="source_document" type="string | null">
+      Title of the source fee schedule document. Only present when `include_source=true`.
+    </ResponseField>
+
+    <ResponseField name="source_link" type="string | null">
+      URL to the source fee schedule document on CDN. Only present when `include_source=true`.
+    </ResponseField>
+
+    <ResponseField name="page_number" type="integer | null">
+      Page number in the source document. Only present when `include_source=true`.
+    </ResponseField>
+
+    <ResponseField name="fee_category" type="string">
+      Fee category
+    </ResponseField>
+
+    <ResponseField name="fee_charge_type" type="string">
+      Whether this is a charge or rebate
+    </ResponseField>
+
+    <ResponseField name="fee_amount" type="string">
+      Fee or rebate amount
+    </ResponseField>
+
+    <ResponseField name="fee_action" type="string">
+      Trading action type
+    </ResponseField>
+
+    <ResponseField name="fee_action_details" type="string | null">
+      Additional action details
+    </ResponseField>
+
+    <ResponseField name="fee_basis" type="string | null">
+      Basis for fee calculation
+    </ResponseField>
+
+    <ResponseField name="fee_participant" type="string">
+      Market participant type
+    </ResponseField>
+
+    <ResponseField name="fee_participant_details" type="string | null">
+      Participant classification details
+    </ResponseField>
+
+    <ResponseField name="fee_monthly_volume" type="string | null">
+      Volume threshold for tiered pricing
+    </ResponseField>
+
+    <ResponseField name="fee_monthly_volume_criteria" type="string | null">
+      Volume tier criteria
+    </ResponseField>
+
+    <ResponseField name="fee_symbol_classification" type="string | null">
+      Symbol classification
+    </ResponseField>
+
+    <ResponseField name="fee_symbol_type" type="string | null">
+      Penny/Non-Penny classification
+    </ResponseField>
+
+    <ResponseField name="fee_trade_type" type="string | null">
+      Trade type
+    </ResponseField>
+
+    <ResponseField name="fee_symbol" type="string | null">
+      Specific symbol(s)
+    </ResponseField>
+
+    <ResponseField name="fee_excluded_symbols" type="string | null">
+      Excluded symbols
+    </ResponseField>
+
+    <ResponseField name="fee_conditions" type="string | null">
+      Conditions for this fee
+    </ResponseField>
+
+    <ResponseField name="fee_exclusions" type="string | null">
+      Scenarios where this fee does not apply
+    </ResponseField>
+
+    <ResponseField name="fee_notes" type="string | null">
+      Additional notes
+    </ResponseField>
+
+    <ResponseField name="fee_extra_info" type="string | null">
+      Additional information
+    </ResponseField>
+
+    <ResponseField name="relationships" type="object | null">
+      Related footnotes and definitions. Only included when `include_footnotes` or `include_definitions` are `true`.
+
+      <Expandable title="Relationships">
+        <ResponseField name="footnotes" type="array">
+          Array of footnote objects, each with a `text` field
+        </ResponseField>
+
+        <ResponseField name="definitions" type="array">
+          Array of definition objects, each with `term` and `text` fields
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="meta" type="object">
+  Response metadata
+
+  <Expandable title="Meta">
+    <ResponseField name="record_count" type="integer">
+      Always `1` for single-record responses
+    </ResponseField>
+
+    <ResponseField name="query_time_ms" type="integer | null">
+      Query execution time in milliseconds
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Example Response
+
+```json
+{
+  "data": {
+    "record_id": "ae619174-ca79-432a-b437-b653cb6e145b",
+    "exchange_name": "fee_nyse_arca_options",
+    "scraped_time": "2026-02-26T00:00:50.839337Z",
+    "version_id": "7c139e34-7c0e-4535-adb5-8538f47f9d63",
+    "fee_type": "option",
+    "source_document": "NYSE Arca Options Rulebook.pdf",
+    "source_link": "https://d305kadk6uf47m.cloudfront.net/fee_nyse_arca_options/parsed/2026-02-26/199efff6d431f402c6b767ea773a3d3d0639d7410bbb3041d996635d0b4eafb5.pdf",
+    "page_number": 17,
+    "fee_category": "fees_and_rebates",
+    "fee_charge_type": "Manual Billable Rebate Program",
+    "fee_amount": "($0.01)",
+    "fee_action": "other",
+    "fee_action_details": "Additional rebate on QCC contracts",
+    "fee_basis": "per two billable side QCC contract",
+    "fee_participant": "other",
+    "fee_participant_details": "Floor Brokers in FB Prepay Program",
+    "fee_monthly_volume": null,
+    "fee_monthly_volume_criteria": null,
+    "fee_symbol_classification": "all",
+    "fee_symbol_type": "both",
+    "fee_trade_type": null,
+    "fee_symbol": "{All}",
+    "fee_excluded_symbols": "{}",
+    "fee_conditions": "Participants in the FB Prepay Program are eligible for an additional rebate if they exceed the aggregate of QCC Tier 1 and QCC Tier 2 qualifications in combined manual billable and QCC billable contracts.",
+    "fee_exclusions": "Excludes QCCs and transactions described in Endnote 12",
+    "fee_notes": null,
+    "fee_extra_info": "Payable back to the first billable side.",
+    "relationships": {
+      "footnotes": [],
+      "definitions": []
+    }
+  },
+  "meta": {
+    "record_count": 1,
+    "query_time_ms": 4556
+  }
+}
+```
+
+## Error Responses
+
+<ResponseExample>
+```json 401 Unauthorized
+{
+  "error": {
+    "code": "UNAUTHORIZED",
+    "message": "Missing or invalid API key."
+  },
+  "meta": { "query_time_ms": 1 }
+}
+```
+
+```json 403 Forbidden
+{
+  "error": {
+    "code": "FORBIDDEN",
+    "message": "You do not have access to this exchange's data."
+  },
+  "meta": { "query_time_ms": 1 }
+}
+```
+
+```json 404 Not Found
+{
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "Fee schedule result not found."
+  },
+  "meta": { "query_time_ms": 1 }
+}
+```
+
+</ResponseExample>

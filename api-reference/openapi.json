@@ -1,0 +1,1099 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Rulebook Company API",
+    "version": "1.0.0",
+    "description": "Read-only API for accessing exchange fee schedule and rebate data across multiple US trading venues. All endpoints are GET requests that return JSON. Data is scoped to exchanges associated with your API key.",
+    "contact": {
+      "name": "Rulebook Company Support",
+      "email": "aaron@rulebookcompany.com",
+      "url": "https://rulebookcompany.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.rulebookcompany.com/api/v1",
+      "description": "Production"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Exchanges",
+      "description": "Discover available exchanges and their metadata (fee types, categories, actions, participants, date ranges)"
+    },
+    {
+      "name": "Fee Schedule Results",
+      "description": "Query, filter, and retrieve extracted fee schedule line items"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-rulebook-api-access-key",
+        "description": "API access key provided by Rulebook Company. Contact aaron@rulebookcompany.com to obtain one."
+      }
+    },
+    "schemas": {
+      "BaseMeta": {
+        "type": "object",
+        "description": "Metadata for non-paginated responses",
+        "properties": {
+          "record_count": {
+            "type": "integer",
+            "description": "Number of records in the response",
+            "example": 1
+          },
+          "query_time_ms": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Query execution time in milliseconds",
+            "example": 45
+          }
+        }
+      },
+      "PaginationMeta": {
+        "type": "object",
+        "description": "Pagination and performance metadata",
+        "properties": {
+          "record_count": {
+            "type": "integer",
+            "description": "Total matching records across all pages",
+            "example": 500
+          },
+          "total_pages": {
+            "type": "integer",
+            "description": "Total number of pages",
+            "example": 25
+          },
+          "current_page": {
+            "type": "integer",
+            "description": "Current page (0-indexed)",
+            "example": 0
+          },
+          "page_size": {
+            "type": "integer",
+            "description": "Records per page",
+            "example": 20
+          },
+          "query_time_ms": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Query execution time in milliseconds",
+            "example": 123
+          }
+        }
+      },
+      "Exchange": {
+        "type": "object",
+        "description": "Summary of an exchange/supplier available in the system",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Unique exchange identifier used in API queries",
+            "example": "fee_nyse_arca_options"
+          },
+          "display_name": {
+            "type": "string",
+            "description": "Human-readable exchange name",
+            "example": "Fee - NYSE Arca Options"
+          },
+          "fee_types": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Fee types available for this exchange",
+            "example": ["option"]
+          },
+          "record_count": {
+            "type": "integer",
+            "description": "Total fee schedule records available for this exchange",
+            "example": 15420
+          }
+        }
+      },
+      "ExchangeDetail": {
+        "type": "object",
+        "description": "Full metadata for a single exchange including all discoverable filter values",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Exchange identifier",
+            "example": "fee_cboe_us_bzx_options"
+          },
+          "display_name": {
+            "type": "string",
+            "description": "Human-readable exchange name",
+            "example": "Fee - CBOE US BZX Options"
+          },
+          "date_range": {
+            "type": "object",
+            "description": "Earliest and latest data available",
+            "properties": {
+              "earliest": {
+                "type": "string",
+                "format": "date",
+                "description": "Earliest scraped date",
+                "example": "2024-01-15"
+              },
+              "latest": {
+                "type": "string",
+                "format": "date",
+                "description": "Latest scraped date",
+                "example": "2025-12-10"
+              }
+            }
+          },
+          "fee_types": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Available fee types. Use these values in the fee_type filter parameter.",
+            "example": ["option", "equity"]
+          },
+          "fee_categories": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Available fee categories. Use these values in the fee_category filter parameter.",
+            "example": [
+              "fees_and_rebates",
+              "general_provisions",
+              "legal_regulatory_fee",
+              "market_data_fees",
+              "participant_fee",
+              "port_fees_and_other_services"
+            ]
+          },
+          "actions": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Available trading action types. Use these values in the fee_action filter parameter.",
+            "example": ["make", "take", "open", "routed", "other"]
+          },
+          "participants": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Available participant types. Use these values in the fee_participant filter parameter.",
+            "example": [
+              "all",
+              "market_maker",
+              "away_market_maker",
+              "broker_dealer",
+              "customer",
+              "firm",
+              "professional",
+              "other"
+            ]
+          },
+          "symbol_classifications": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Available symbol classifications. Use these values in the fee_symbol_classification filter parameter.",
+            "example": ["etf", "equity_class", "index", "not_applicable", "all"]
+          },
+          "symbol_types": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Available symbol types. Use these values in the fee_symbol_type filter parameter.",
+            "example": ["penny", "non_penny", "not_applicable", "both"]
+          },
+          "trade_types": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Available trade types. Use these values in the fee_trade_type filter parameter.",
+            "example": [
+              "index_options",
+              "multiply_traded_options",
+              "simple_order",
+              "complex_order"
+            ]
+          }
+        }
+      },
+      "FeeScheduleResult": {
+        "type": "object",
+        "description": "A single fee/rebate line item extracted from an exchange fee schedule document",
+        "properties": {
+          "record_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier",
+            "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+          },
+          "exchange_name": {
+            "type": "string",
+            "description": "Exchange identifier",
+            "example": "fee_nyse_arca_options"
+          },
+          "scraped_time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the fee schedule was scraped from the exchange website",
+            "example": "2025-03-26T07:25:19+00:00"
+          },
+          "version_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Fee extraction version identifier. Use this to fetch all fee results from the same version via the versions endpoint.",
+            "example": "f7e8d9c0-b1a2-3456-7890-abcdef123456"
+          },
+          "fee_type": {
+            "type": "string",
+            "description": "Fee type",
+            "enum": ["option", "equity"],
+            "example": "option"
+          },
+          "source_document": {
+            "type": "string",
+            "nullable": true,
+            "description": "Title of the source fee schedule document. Only included when `include_source=true`.",
+            "example": "Fee Schedule 2025"
+          },
+          "source_link": {
+            "type": "string",
+            "nullable": true,
+            "description": "URL to the source fee schedule document on CDN. Only included when `include_source=true`.",
+            "example": "https://cdn.rulebookcompany.com/exchanges/cboe/fee-schedule-2025.pdf"
+          },
+          "page_number": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Page number in the source document where this fee was extracted. Only included when `include_source=true`.",
+            "example": 3
+          },
+          "fee_category": {
+            "type": "string",
+            "description": "Fee category",
+            "enum": [
+              "fees_and_rebates",
+              "general_provisions",
+              "legal_regulatory_fee",
+              "market_data_fees",
+              "participant_fee",
+              "port_fees_and_other_services"
+            ],
+            "example": "fees_and_rebates"
+          },
+          "fee_charge_type": {
+            "type": "string",
+            "description": "Whether this is a charge or rebate",
+            "example": "Rebate"
+          },
+          "fee_amount": {
+            "type": "string",
+            "description": "Fee or rebate amount (may include currency, ranges, or tier descriptions)",
+            "example": "$0.25 per contract"
+          },
+          "fee_action": {
+            "type": "string",
+            "description": "Trading action type",
+            "enum": ["make", "take", "open", "routed", "other"],
+            "example": "make"
+          },
+          "fee_action_details": {
+            "type": "string",
+            "nullable": true,
+            "description": "Additional action details",
+            "example": "Adding displayed liquidity"
+          },
+          "fee_basis": {
+            "type": "string",
+            "nullable": true,
+            "description": "Basis for fee calculation (per share, per contract, percentage, etc.)",
+            "example": "Per Contract"
+          },
+          "fee_participant": {
+            "type": "string",
+            "description": "Market participant type this fee applies to",
+            "enum": [
+              "customer",
+              "firm",
+              "broker_dealer",
+              "market_maker",
+              "away_market_maker",
+              "professional",
+              "other",
+              "all"
+            ],
+            "example": "market_maker"
+          },
+          "fee_participant_details": {
+            "type": "string",
+            "nullable": true,
+            "description": "Additional participant classification details",
+            "example": "Designated Market Maker (DMM)"
+          },
+          "fee_monthly_volume": {
+            "type": "string",
+            "nullable": true,
+            "description": "Monthly volume threshold for tiered pricing",
+            "example": "0 - 99,999 contracts"
+          },
+          "fee_monthly_volume_criteria": {
+            "type": "string",
+            "nullable": true,
+            "description": "Criteria used to determine volume tier",
+            "example": "National ADV"
+          },
+          "fee_symbol_classification": {
+            "type": "string",
+            "nullable": true,
+            "description": "Classification of the underlying symbol",
+            "enum": ["etf", "etn", "equity_class", "index", "not_applicable", "all"],
+            "example": "etf"
+          },
+          "fee_symbol_type": {
+            "type": "string",
+            "nullable": true,
+            "description": "Penny or Non-Penny classification",
+            "enum": ["penny", "non_penny", "not_applicable", "both"],
+            "example": "penny"
+          },
+          "fee_trade_type": {
+            "type": "string",
+            "nullable": true,
+            "description": "Type of trade this fee applies to",
+            "enum": [
+              "index_options",
+              "multiply_traded_options",
+              "simple_order",
+              "complex_order",
+              "not_applicable"
+            ],
+            "example": "simple_order"
+          },
+          "fee_symbol": {
+            "type": "string",
+            "nullable": true,
+            "description": "Specific symbol(s) this fee applies to",
+            "example": "SPY, QQQ, IWM"
+          },
+          "fee_excluded_symbols": {
+            "type": "string",
+            "nullable": true,
+            "description": "Symbols excluded from this fee",
+            "example": "SPX, VIX"
+          },
+          "fee_conditions": {
+            "type": "string",
+            "nullable": true,
+            "description": "Conditions that must be met for this fee to apply",
+            "example": "Applies only during regular trading hours"
+          },
+          "fee_exclusions": {
+            "type": "string",
+            "nullable": true,
+            "description": "Scenarios where this fee does not apply",
+            "example": "Does not apply to auction orders"
+          },
+          "fee_notes": {
+            "type": "string",
+            "nullable": true,
+            "description": "Additional notes or context",
+            "example": "Applies to different customer types"
+          },
+          "fee_extra_info": {
+            "type": "string",
+            "nullable": true,
+            "description": "Any additional information",
+            "example": "Effective from January 2025"
+          },
+          "relationships": {
+            "type": "object",
+            "nullable": true,
+            "description": "Related footnotes and definitions from the source document. Only included when `include_footnotes` or `include_definitions` query parameters are set to true.",
+            "properties": {
+              "footnotes": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "text": {
+                      "type": "string",
+                      "description": "Footnote text from the source document"
+                    }
+                  }
+                },
+                "description": "Footnotes referenced by this fee record"
+              },
+              "definitions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "term": {
+                      "type": "string",
+                      "description": "Defined term"
+                    },
+                    "text": {
+                      "type": "string",
+                      "description": "Definition text"
+                    }
+                  }
+                },
+                "description": "Definitions referenced by this fee record"
+              }
+            }
+          }
+        }
+      },
+      "FeeScheduleFilters": {
+        "type": "object",
+        "description": "Available filter values scoped to your associated exchanges. Use the returned values directly as query parameter values when calling the fee schedule results endpoint.",
+        "properties": {
+          "exchange_names": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Available exchange identifiers",
+            "example": ["fee_cboe_us_bzx_options", "fee_memx", "fee_nyse_arca_options", "nasdaqphlx"]
+          },
+          "fee_types": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Available fee types (snake_case)",
+            "example": ["option", "equity"]
+          },
+          "fee_categories": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Available fee categories (snake_case)",
+            "example": [
+              "fees_and_rebates",
+              "general_provisions",
+              "legal_regulatory_fee",
+              "market_data_fees",
+              "participant_fee",
+              "port_fees_and_other_services"
+            ]
+          },
+          "fee_actions": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Available trading action types (snake_case)",
+            "example": ["make", "take", "open", "routed", "other"]
+          },
+          "fee_participants": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Available participant types (snake_case)",
+            "example": [
+              "all",
+              "away_market_maker",
+              "broker_dealer",
+              "customer",
+              "firm",
+              "market_maker",
+              "other",
+              "professional"
+            ]
+          },
+          "fee_symbol_classifications": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Available symbol classifications (snake_case)",
+            "example": ["all", "etf", "equity_class", "index", "not_applicable"]
+          },
+          "fee_symbol_types": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Available symbol types (snake_case)",
+            "example": ["both", "non_penny", "not_applicable", "penny"]
+          },
+          "fee_trade_types": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Available trade types (snake_case)",
+            "example": [
+              "complex_order",
+              "index_options",
+              "multiply_traded_options",
+              "simple_order"
+            ]
+          }
+        }
+      },
+      "UnauthorizedError": {
+        "type": "object",
+        "description": "Error response returned when the API key is invalid or missing",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string", "example": "UNAUTHORIZED" },
+              "message": { "type": "string", "example": "Missing or invalid API key." }
+            }
+          },
+          "meta": { "type": "object", "example": {} }
+        }
+      },
+      "NotFoundError": {
+        "type": "object",
+        "description": "Error response returned when a resource is not found or access is forbidden",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string", "example": "NOT_FOUND" },
+              "message": { "type": "string", "example": "Fee schedule result not found." }
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "query_time_ms": { "type": "integer", "example": 0 }
+            }
+          }
+        }
+      },
+      "ValidationError": {
+        "type": "object",
+        "description": "Validation error returned for invalid query parameters",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string", "example": "VALIDATION_ERROR" },
+              "message": { "type": "string", "example": "Invalid query parameters." },
+              "details": { "type": "array", "items": {} }
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "query_time_ms": { "type": "integer", "example": 0 }
+            }
+          }
+        }
+      }
+    },
+    "parameters": {
+      "PageSize": {
+        "name": "page_size",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 20
+        },
+        "description": "Number of records per page (1-100)"
+      },
+      "PageNumber": {
+        "name": "page_number",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        },
+        "description": "Page number (0-indexed)"
+      },
+      "StartDate": {
+        "name": "start_date",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "format": "date"
+        },
+        "description": "Filter results scraped on or after this date (YYYY-MM-DD)",
+        "example": "2025-01-01"
+      },
+      "EndDate": {
+        "name": "end_date",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "format": "date"
+        },
+        "description": "Filter results scraped on or before this date (YYYY-MM-DD)",
+        "example": "2025-12-31"
+      },
+      "IncludeFootnotes": {
+        "name": "include_footnotes",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "boolean",
+          "default": false
+        },
+        "description": "When true, includes resolved footnotes from the source document in the `relationships` field of each result"
+      },
+      "IncludeDefinitions": {
+        "name": "include_definitions",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "boolean",
+          "default": false
+        },
+        "description": "When true, includes resolved definitions from the source document in the `relationships` field of each result"
+      },
+      "IncludeSource": {
+        "name": "include_source",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "boolean",
+          "default": false
+        },
+        "description": "When true, includes `source_document`, `source_link`, and `page_number` fields in each result"
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "description": "Invalid or missing API key",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/UnauthorizedError" },
+            "example": {
+              "error": {
+                "code": "UNAUTHORIZED",
+                "message": "Missing or invalid API key."
+              },
+              "meta": {}
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "You do not have access to this resource",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/NotFoundError" },
+            "example": {
+              "error": {
+                "code": "FORBIDDEN",
+                "message": "You do not have access to this exchange's data."
+              },
+              "meta": { "query_time_ms": 0 }
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Resource not found",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/NotFoundError" },
+            "example": {
+              "error": {
+                "code": "NOT_FOUND",
+                "message": "Resource not found."
+              },
+              "meta": { "query_time_ms": 0 }
+            }
+          }
+        }
+      },
+      "ValidationError": {
+        "description": "Invalid query parameters",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ValidationError" },
+            "example": {
+              "error": {
+                "code": "VALIDATION_ERROR",
+                "message": "Invalid query parameters.",
+                "details": []
+              },
+              "meta": { "query_time_ms": 0 }
+            }
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/exchanges/": {
+      "get": {
+        "summary": "List exchanges",
+        "description": "Returns all exchanges available to your account. Each exchange includes a summary of available fee types and record counts. Use this to discover which exchanges you can query.",
+        "operationId": "listExchanges",
+        "tags": ["Exchanges"],
+        "responses": {
+          "200": {
+            "description": "List of exchanges",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Exchange" }
+                    },
+                    "meta": { "$ref": "#/components/schemas/BaseMeta" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/exchanges/{exchange_name}": {
+      "get": {
+        "summary": "Get exchange details",
+        "description": "Returns full metadata for a single exchange including all available filter values (fee types, categories, actions, participants, symbol classifications, symbol types, trade types) and the date range of available data. Use this to discover what query parameters you can use when fetching fee schedule results for this exchange. The total record count is returned in `meta.record_count`.",
+        "operationId": "getExchange",
+        "tags": ["Exchanges"],
+        "parameters": [
+          {
+            "name": "exchange_name",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Exchange identifier (e.g., fee_cboe_us_bzx_options, nasdaqphlx). Use values from the List Exchanges endpoint.",
+            "example": "fee_cboe_us_bzx_options"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Exchange detail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/ExchangeDetail" },
+                    "meta": { "$ref": "#/components/schemas/BaseMeta" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/fee-schedule-results/": {
+      "get": {
+        "summary": "List fee schedule results",
+        "description": "Returns a paginated list of fee schedule results with comprehensive filtering. Results are scoped to exchanges associated with your API key. Each result represents a single fee or rebate line item extracted from an exchange fee schedule document.\n\nUse the `/fee-schedule-results/filters` endpoint or `/exchanges/{name}` to discover available filter values before querying.",
+        "operationId": "listFeeScheduleResults",
+        "tags": ["Fee Schedule Results"],
+        "parameters": [
+          {
+            "name": "exchange_name",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "array", "items": { "type": "string" } },
+            "style": "form",
+            "explode": true,
+            "description": "Filter by exchange name(s). Repeat for multiple: `?exchange_name=CBOE&exchange_name=NYSE`",
+            "example": ["fee_cboe_us_bzx_options"]
+          },
+          {
+            "name": "fee_type",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "array", "items": { "type": "string" } },
+            "style": "form",
+            "explode": true,
+            "description": "Filter by fee type(s): option, equity"
+          },
+          {
+            "name": "fee_category",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "array", "items": { "type": "string" } },
+            "style": "form",
+            "explode": true,
+            "description": "Filter by fee category(s): fees_and_rebates, general_provisions, legal_regulatory_fee, market_data_fees, participant_fee, port_fees_and_other_services"
+          },
+          {
+            "name": "fee_action",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["make", "take", "open", "routed", "other"]
+              }
+            },
+            "style": "form",
+            "explode": true,
+            "description": "Filter by trading action(s)"
+          },
+          {
+            "name": "fee_participant",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "customer",
+                  "firm",
+                  "broker_dealer",
+                  "market_maker",
+                  "away_market_maker",
+                  "professional",
+                  "other",
+                  "all"
+                ]
+              }
+            },
+            "style": "form",
+            "explode": true,
+            "description": "Filter by participant type(s)"
+          },
+          {
+            "name": "fee_symbol_classification",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["etf", "etn", "equity_class", "index", "not_applicable", "all"]
+              }
+            },
+            "style": "form",
+            "explode": true,
+            "description": "Filter by symbol classification(s)"
+          },
+          {
+            "name": "fee_symbol_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["penny", "non_penny", "not_applicable", "both"]
+              }
+            },
+            "style": "form",
+            "explode": true,
+            "description": "Filter by symbol type(s)"
+          },
+          {
+            "name": "fee_trade_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "index_options",
+                  "multiply_traded_options",
+                  "simple_order",
+                  "complex_order"
+                ]
+              }
+            },
+            "style": "form",
+            "explode": true,
+            "description": "Filter by trade type(s)"
+          },
+          { "$ref": "#/components/parameters/StartDate" },
+          { "$ref": "#/components/parameters/EndDate" },
+          {
+            "name": "latest_only",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "boolean", "default": false },
+            "description": "When true, returns only the latest version per unique (supplier, fee_type) combination. Useful for getting only current fee data."
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "created_on",
+                "scraped_time",
+                "fee_type",
+                "fee_category"
+              ],
+              "default": "created_on"
+            },
+            "description": "Field to sort results by"
+          },
+          {
+            "name": "order_dir",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["asc", "desc"],
+              "default": "desc"
+            },
+            "description": "Sort direction"
+          },
+          { "$ref": "#/components/parameters/PageSize" },
+          { "$ref": "#/components/parameters/PageNumber" },
+          { "$ref": "#/components/parameters/IncludeFootnotes" },
+          { "$ref": "#/components/parameters/IncludeDefinitions" },
+          { "$ref": "#/components/parameters/IncludeSource" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated fee schedule results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/FeeScheduleResult"
+                      }
+                    },
+                    "meta": { "$ref": "#/components/schemas/PaginationMeta" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "422": { "$ref": "#/components/responses/ValidationError" }
+        }
+      }
+    },
+    "/fee-schedule-results/filters": {
+      "get": {
+        "summary": "Get available filters",
+        "description": "Returns all distinct filter values for fee schedule results, scoped to exchanges associated with your API key. Use these values to build valid queries for the list endpoint and to populate UI filter dropdowns.",
+        "operationId": "getFeeScheduleFilters",
+        "tags": ["Fee Schedule Results"],
+        "parameters": [
+          {
+            "name": "exchange_name",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "array", "items": { "type": "string" } },
+            "style": "form",
+            "explode": true,
+            "description": "Narrow filter values to specific exchange(s). Repeat for multiple: `?exchange_name=fee_cboe_us_bzx_options&exchange_name=fee_memx`"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Available filter values",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/FeeScheduleFilters"
+                    },
+                    "meta": { "$ref": "#/components/schemas/BaseMeta" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/fee-schedule-results/versions/{version_id}": {
+      "get": {
+        "summary": "Get fee schedule results by version",
+        "description": "Returns all fee schedule results belonging to a specific extraction version. Use this to retrieve the complete set of fees extracted from a single fee schedule document version. Access is scoped to exchanges associated with your API key.",
+        "operationId": "getFeeScheduleResultsByVersion",
+        "tags": ["Fee Schedule Results"],
+        "parameters": [
+          {
+            "name": "version_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" },
+            "description": "Fee extraction version identifier (from the `version_id` field in fee schedule results)",
+            "example": "f7e8d9c0-b1a2-3456-7890-abcdef123456"
+          },
+          { "$ref": "#/components/parameters/PageSize" },
+          { "$ref": "#/components/parameters/PageNumber" },
+          { "$ref": "#/components/parameters/IncludeFootnotes" },
+          { "$ref": "#/components/parameters/IncludeDefinitions" },
+          { "$ref": "#/components/parameters/IncludeSource" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated fee schedule results for the specified version",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/FeeScheduleResult"
+                      }
+                    },
+                    "meta": { "$ref": "#/components/schemas/PaginationMeta" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "422": { "$ref": "#/components/responses/ValidationError" }
+        }
+      }
+    },
+    "/fee-schedule-results/{record_id}": {
+      "get": {
+        "summary": "Get fee schedule result",
+        "description": "Returns a single fee schedule result by ID. Access is scoped — you can only retrieve results for exchanges associated with your API key.",
+        "operationId": "getFeeScheduleResult",
+        "tags": ["Fee Schedule Results"],
+        "parameters": [
+          {
+            "name": "record_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" },
+            "description": "Unique identifier of the fee schedule result",
+            "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+          },
+          { "$ref": "#/components/parameters/IncludeFootnotes" },
+          { "$ref": "#/components/parameters/IncludeDefinitions" },
+          { "$ref": "#/components/parameters/IncludeSource" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Fee schedule result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/FeeScheduleResult" },
+                    "meta": { "$ref": "#/components/schemas/BaseMeta" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    }
+  }
+}
